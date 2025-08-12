@@ -206,20 +206,57 @@ flowchart TB
 | Deployment  | id, projectId, env[local\|prod], status, url, startedAt, finishedAt | 배포 이력                             |
 | SearchIndex | id, targetType, targetId, content, updatedAt                        | 검색 인덱스                           |
 
-### 폴더 구조 (예시)
+### 폴더 구조
 
+#### Phase 1-2: 기본 분리 구조
 ```
 portfolio-manager/
-  apps/manager-web/          # 대시보드 웹(Next.js)
-  apps/portfolio-api/        # 포트폴리오/노트 API(FastAPI)
-  apps/auth-api/             # 인증/SSO API(FastAPI)
-  apps/site-template-next/   # 포트폴리오 사이트 템플릿(Next.js)
-  packages/ui/               # 공유 UI 컴포넌트
-  packages/sdk/              # OpenAPI 기반 TS/Python SDK
-  packages/config/           # 공통 설정
-  infra/compose/             # docker-compose 정의
-  infra/k8s/                 # Kubernetes 매니페스트/Helm
-  docs/                      # 문서
+├── frontend/              # Next.js 14 관리 대시보드
+│   ├── src/
+│   │   ├── app/          # App Router 페이지
+│   │   ├── components/   # UI 컴포넌트
+│   │   ├── lib/          # 유틸리티, API 클라이언트
+│   │   └── types/        # TypeScript 타입 정의
+│   ├── public/           # 정적 파일
+│   ├── package.json
+│   └── next.config.js
+├── backend/               # FastAPI 통합 서비스
+│   ├── app/
+│   │   ├── api/          # API 엔드포인트
+│   │   ├── core/         # 설정, 보안, 데이터베이스
+│   │   ├── models/       # SQLAlchemy 모델
+│   │   ├── schemas/      # Pydantic 스키마
+│   │   └── services/     # 비즈니스 로직
+│   ├── alembic/          # 데이터베이스 마이그레이션
+│   ├── tests/
+│   ├── requirements.txt
+│   └── main.py
+├── docs/                  # 프로젝트 문서
+├── docker-compose.yml     # 로컬 개발 환경 (PostgreSQL, Redis)
+├── .env.example
+├── README.md
+├── CLAUDE.md
+└── .mcp.json
+```
+
+#### Phase 3-4: 마이크로서비스 구조 (확장 시)
+```
+portfolio-manager/
+├── frontend/              # Next.js 관리 대시보드
+├── services/              # 마이크로서비스들
+│   ├── auth-service/      # 인증/SSO 서비스 (FastAPI)
+│   ├── portfolio-service/ # 포트폴리오/노트 서비스 (FastAPI)
+│   ├── notification-service/ # 알림 서비스 (Node.js)
+│   └── analytics-service/ # 분석 서비스 (Go)
+├── shared/                # 공통 라이브러리
+│   ├── ui/               # 공유 UI 컴포넌트
+│   ├── sdk/              # OpenAPI 기반 SDK
+│   └── config/           # 공통 설정
+├── infra/                 # 인프라 설정
+│   ├── compose/          # Docker Compose
+│   ├── k8s/              # Kubernetes 매니페스트
+│   └── helm/             # Helm Charts
+└── site-templates/        # 포트폴리오 사이트 템플릿
 ```
 
 ### 빠른 시작
@@ -233,25 +270,23 @@ portfolio-manager/
 2. 설치
 
 ```bash
-# 프론트엔드
-cd apps/manager-web && pnpm install
+# 프론트엔드 (Next.js 14)
+cd frontend && pnpm install
 
-# 백엔드(예시)
-cd ../../apps/portfolio-api && python -m venv .venv && source .venv/bin/activate
+# 백엔드 (FastAPI)
+cd backend && python -m venv .venv && source .venv/bin/activate
 pip install -U pip
 pip install fastapi uvicorn[standard] sqlalchemy pydantic alembic psycopg2-binary python-multipart python-jose[cryptography]
-
-# 인증 서비스도 동일하게 의존성 설치
 ```
 
 3. 로컬 인프라 기동
 
 ```bash
-docker compose -f infra/compose/docker-compose.yml up -d  # postgres, meilisearch, traefik 등
+docker compose up -d  # PostgreSQL, Redis 등
 ```
 
 4. 환경 변수
-   `.env.example`를 각 앱에 복사하여 `.env` 생성:
+   `.env.example`을 복사하여 `.env` 생성:
 
 ```
 # 공통
@@ -269,19 +304,16 @@ SEARCH_API_KEY=masterKey
 5. 개발 서버 실행
 
 ```bash
-# 포트폴리오 API
-cd apps/portfolio-api && uvicorn app.main:app --reload --port 8081
+# 백엔드 (FastAPI)
+cd backend && uvicorn app.main:app --reload --port 8000
 
-# 인증 API
-cd apps/auth-api && uvicorn app.main:app --reload --port 8082
-
-# 매니저 웹
-cd apps/manager-web && pnpm dev
+# 프론트엔드 (Next.js)
+cd frontend && pnpm dev
 ```
 
-6. 관리자 계정 생성(예시)
+6. 관리자 계정 생성
 
-- `/apps/auth-api`에서 관리용 스크립트 또는 `/admin/seed` 엔드포인트로 초기 관리자 발급
+- 백엔드에서 관리용 스크립트 또는 `/admin/seed` 엔드포인트로 초기 관리자 발급
 
 ### 사용법 (초안)
 
@@ -330,6 +362,42 @@ pnpm test:watch
 - Compose(로컬): Traefik 라벨 기반 라우팅, `.env`로 호스트네임 지정
 
 ## 🎯 현실적 구현 로드맵 (단계적 접근법)
+
+### 📝 개발 워크플로우 및 문서 관리
+
+#### 기능별 개발 사이클
+1. **기능 설계**: Notion에서 기능 명세 작성 (PRD/TDD)
+2. **코드 구현**: 효율적 개발 및 테스트 주도 개발(TDD)
+3. **테스트 및 검증**: 자동화 테스트 및 품질 검증
+4. **기능별 커밋**: 완성된 기능 단위로 의미있는 커밋 메시지
+5. **문서 동기화**: Notion을 통한 자동 문서 업데이트 및 진행상황 추적
+
+#### 커밋 관리 전략
+```bash
+# 기능별 커밋 예시 (Conventional Commits 규칙 준수)
+feat: 프로젝트 CRUD API 구현 (Phase 1)
+feat: 노트 시스템 좌측 탭 UI 완성 (Phase 1)  
+feat: PWA Service Worker 및 오프라인 모드 (Phase 2)
+feat: Notion API 동기화 기능 (Phase 3)
+feat: 마이크로서비스 아키텍처 구현 (Phase 4)
+
+# 타입별 커밋 규칙
+feat: 새로운 기능 추가
+fix: 버그 수정
+docs: 문서 변경
+style: 코드 포맷팅
+refactor: 코드 리팩토링
+test: 테스트 코드
+chore: 빌드/패키지 설정
+```
+
+#### Notion 통합 문서 관리
+- **자동 동기화**: 각 기능 완성시 Notion에 개발 로그 자동 생성
+- **진행 상황 추적**: Phase별 체크리스트와 실시간 연동
+- **아키텍처 결정 기록(ADR)**: 중요한 기술 선택 이유 문서화
+- **API 문서**: OpenAPI 스펙과 Notion 자동 동기화
+- **회고록**: 스프린트 완료 후 자동 회고 문서 생성
+- **지식 관리**: 학습 노트와 기술 리서치 체계적 정리
 
 ### Phase 1: MVP - 실사용 가능한 포트폴리오 매니저 (2-3개월)
 **목표**: 핵심 기능으로 실제 사용 가능한 서비스 구축
