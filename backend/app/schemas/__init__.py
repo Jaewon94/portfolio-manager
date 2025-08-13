@@ -1,4 +1,4 @@
-# Pydantic ¤¤È (¤À
+# Pydantic schemas
 from .user import User, UserCreate, UserUpdate, UserInDB
 from .project import Project, ProjectCreate, ProjectUpdate, ProjectInDB
 from .note import Note, NoteCreate, NoteUpdate, NoteInDB
