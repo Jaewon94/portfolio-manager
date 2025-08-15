@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  # PostgreSQL 데이터베이스
+  postgres:
+    image: postgres:15-alpine
+    container_name: portfolio_manager_db
+    environment:
+      POSTGRES_DB: portfolio_manager
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis 캐시
+  redis:
+    image: redis:7-alpine
+    container_name: portfolio_manager_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+
+  # Elasticsearch (Phase 2에서 사용)
+  elasticsearch:
+    image: elasticsearch:8.11.0
+    container_name: portfolio_manager_es
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    profiles:
+      - search
+
+volumes:
+  postgres_data:
+  redis_data:
+  es_data:
