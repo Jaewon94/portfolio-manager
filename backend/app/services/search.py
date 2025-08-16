@@ -371,7 +371,7 @@ class SearchService:
         )
         
         # UNION으로 태그 통합 후 필터링
-        union_stmt = project_tags_stmt.union(note_tags_stmt)
+        union_stmt = project_tags_stmt.union(note_tags_stmt).subquery()
         
         # 서브쿼리로 감싸서 필터링 및 집계
         final_stmt = select(
@@ -411,7 +411,7 @@ class SearchService:
         )
         
         # 태그 통합 및 집계
-        union_stmt = project_tags.union_all(note_tags)
+        union_stmt = project_tags.union_all(note_tags).subquery()
         
         final_stmt = select(
             union_stmt.c.tag,
@@ -452,13 +452,18 @@ class SearchService:
         )
         
         # 실행
-        project_count = await self.db.execute(project_count_stmt)
-        note_count = await self.db.execute(note_count_stmt)
-        user_count = await self.db.execute(user_count_stmt)
+        project_count_result = await self.db.execute(project_count_stmt)
+        note_count_result = await self.db.execute(note_count_stmt)
+        user_count_result = await self.db.execute(user_count_stmt)
+        
+        # 결과 값 추출
+        total_projects = project_count_result.scalar()
+        total_notes = note_count_result.scalar()
+        total_users = user_count_result.scalar()
         
         return {
-            "total_projects": project_count.scalar(),
-            "total_notes": note_count.scalar(),
-            "total_users": user_count.scalar(),
-            "indexable_content": project_count.scalar() + note_count.scalar()
+            "total_projects": total_projects,
+            "total_notes": total_notes,
+            "total_users": total_users,
+            "indexable_content": total_projects + total_notes
         }
