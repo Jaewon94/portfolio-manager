@@ -1,14 +1,17 @@
-from typing import Optional, Dict, List, Any
 from datetime import datetime
-from pydantic import BaseModel, Field
+from typing import Any, Dict, List, Optional
+
 from app.models.note import NoteType
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class NoteBase(BaseModel):
     """노트 기본 스키마 (ERD 명세 기준)"""
 
     title: str = Field(..., max_length=200, description="노트 제목")
-    content: Dict[str, Any] = Field(..., description="노트 내용 (JSONB - Markdown 또는 구조화된 콘텐츠)")
+    content: Dict[str, Any] = Field(
+        ..., description="노트 내용 (JSONB - Markdown 또는 구조화된 콘텐츠)"
+    )
     type: NoteType = Field(..., description="노트 타입 (learn|change|research)")
     tags: List[str] = Field(default=[], description="태그 배열")
     is_pinned: bool = Field(default=False, description="고정 여부")
@@ -40,8 +43,7 @@ class NoteInDB(NoteBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class Note(NoteBase):
@@ -52,5 +54,4 @@ class Note(NoteBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
