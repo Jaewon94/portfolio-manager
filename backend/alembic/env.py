@@ -22,7 +22,14 @@ if config.config_file_name is not None:
 # add your model's MetaData object here
 # for 'autogenerate' support
 from app.models import Base
-from app.models import User, Project, Note  # 모든 모델을 임포트
+# 7개 핵심 모델 모두 임포트 (autogenerate를 위해 필요)
+from app.models.user import User, UserRole
+from app.models.auth_account import AuthAccount
+from app.models.session import Session
+from app.models.project import Project, ProjectStatus, ProjectVisibility
+from app.models.github_repository import GithubRepository
+from app.models.note import Note, NoteType
+from app.models.media import Media, MediaType, MediaTargetType
 from app.core.config import settings
 
 # 환경변수에서 DATABASE_URL 가져오기
