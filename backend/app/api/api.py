@@ -5,7 +5,7 @@ API 라우터 통합
 
 from fastapi import APIRouter
 
-from app.api.endpoints import auth, projects, notes
+from app.api.endpoints import auth, projects, notes, search
 
 # 메인 API 라우터
 api_router = APIRouter()
@@ -29,4 +29,11 @@ api_router.include_router(
     notes.router,
     prefix="/notes",
     tags=["notes"]
+)
+
+# 검색 API 라우터 등록
+api_router.include_router(
+    search.router,
+    prefix="/search",
+    tags=["search"]
 )

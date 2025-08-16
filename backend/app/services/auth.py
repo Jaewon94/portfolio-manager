@@ -490,23 +490,33 @@ async def get_current_user(
     db: AsyncSession = Depends(get_db)
 ) -> User:
     """
-    현재 인증된 사용자 조회 (의존성 주입)
-    
-    Args:
-        authorization: HTTP Bearer 토큰
-        db: 데이터베이스 세션
-        
-    Returns:
-        User: 인증된 사용자
-        
-    Raises:
-        HTTPException: 인증 실패 시
+    현재 인증된 사용자 조회 (필수)
     """
-    if not authorization:
+    user = await get_current_user_optional(authorization, db)
+    if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Authorization token required"
         )
+    return user
+
+
+async def get_current_user_optional(
+    authorization: Optional[str] = Depends(security),
+    db: AsyncSession = Depends(get_db)
+) -> Optional[User]:
+    """
+    현재 인증된 사용자 조회 (선택사항)
+    
+    Args:
+        authorization: HTTP Bearer 토큰 (선택사항)
+        db: 데이터베이스 세션
+        
+    Returns:
+        Optional[User]: 인증된 사용자 또는 None
+    """
+    if not authorization:
+        return None
     
     try:
         # Bearer 토큰에서 실제 토큰 추출
@@ -519,18 +529,8 @@ async def get_current_user(
         auth_service = AuthService(db)
         user = await auth_service.get_user_by_id(user_id)
         
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User not found"
-            )
-        
         return user
         
-    except HTTPException:
-        raise
     except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials"
-        )
+        # 인증 오류 시 None 반환 (오류 발생시키지 않음)
+        return None
