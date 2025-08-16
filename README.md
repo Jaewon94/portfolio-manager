@@ -476,12 +476,43 @@ cd frontend && pnpm dev --verbose
 
 ## 테스트
 
+### 프론트엔드 테스트
 ```bash
+cd frontend
 pnpm test
 pnpm test:watch
 ```
 
-- 범위: 유스케이스/서비스 단위 테스트, 스냅샷(선택)
+### 백엔드 테스트 (PostgreSQL 환경)
+
+```bash
+# 1. 테스트용 PostgreSQL 컨테이너 시작
+docker-compose --profile test up -d postgres-test
+
+# 2. 테스트 실행
+cd backend
+python -m pytest tests/ -v
+
+# 3. 테스트 완료 후 정리
+docker-compose --profile test down
+```
+
+**자동 설정 스크립트 사용:**
+```bash
+cd backend
+./test-db-setup.sh --run-tests  # 환경 설정 + 테스트 실행
+```
+
+**테스트 환경 특징:**
+- **PostgreSQL**: 메인 DB와 동일한 groonga/pgroonga 이미지 사용
+- **전문검색**: PGroonga 확장으로 실제 전문검색 기능 테스트
+- **테스트 격리**: 각 테스트마다 데이터 자동 정리
+- **빠른 실행**: tmpfs 인메모리 파일시스템 사용
+
+**테스트 범위:**
+- 도메인 로직 단위 테스트
+- API 엔드포인트 통합 테스트  
+- 미디어 업로드/처리 테스트
 - 경계값/예외: 기간 역전, 중복 태그, 큰 미디어 파일, 네트워크 실패
 
 ## 품질/보안/성능 체크리스트
