@@ -1,29 +1,29 @@
 # FastAPI 안정화 스택
-fastapi==0.115.5
-uvicorn[standard]==0.32.1
+fastapi==0.115.5  # 고성능 웹 프레임워크 (비동기, 자동 문서화, 타입 힌트)
+uvicorn[standard]==0.32.1  # ASGI 서버 (FastAPI 실행 엔진)
 
 # 데이터베이스 & ORM
-sqlalchemy==2.0.36
-alembic==1.14.0
-asyncpg==0.30.0  # 비동기 PostgreSQL 드라이버
-psycopg2-binary==2.9.10  # Alembic용 동기 드라이버
-greenlet==3.2.4  # SQLAlchemy 비동기 지원
+sqlalchemy==2.0.36  # Python ORM (객체-관계 매핑, SQL 추상화)
+alembic==1.14.0  # 데이터베이스 마이그레이션 도구 (스키마 버전 관리)
+asyncpg==0.30.0  # 비동기 PostgreSQL 드라이버 (FastAPI 메인 사용)
+psycopg2-binary==2.9.10  # 동기 PostgreSQL 드라이버 (Alembic 마이그레이션용)
+greenlet==3.2.4  # SQLAlchemy 비동기 지원 라이브러리 (코루틴 관리)
 
 # Pydantic & 검증
-pydantic==2.10.4
-pydantic-settings==2.7.0
+pydantic==2.10.4  # 데이터 검증 및 직렬화 (타입 안전성, JSON 스키마)
+pydantic-settings==2.7.0  # 환경변수 및 설정 관리 (.env 파일 자동 로드)
 
 # 인증 & 보안
-python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
-python-multipart==0.0.6
+python-jose[cryptography]==3.3.0  # JWT 토큰 생성/검증 (JSON Web Token)
+passlib[bcrypt]==1.7.4  # 비밀번호 해싱 (bcrypt 암호화)
+python-multipart==0.0.6  # 파일 업로드 지원 (multipart/form-data 파싱)
 
 # 기타 유틸리티
-python-dotenv==1.0.0
-httpx==0.25.2
+python-dotenv==1.0.0  # .env 파일 로드 (환경변수 관리)
+httpx==0.25.2  # 비동기 HTTP 클라이언트 (외부 API 호출)
 
 # 개발 도구
-pytest==7.4.3
-pytest-asyncio==0.21.1
-black==23.11.0
-ruff==0.1.7
+pytest==7.4.3  # 테스트 프레임워크 (단위/통합 테스트)
+pytest-asyncio==0.21.1  # 비동기 테스트 지원 (async/await 테스트)
+black==23.11.0  # 코드 포맷터 (일관된 코드 스타일)
+ruff==0.1.7  # 고속 린터 (코드 품질 검사, 에러 감지)
