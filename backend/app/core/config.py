@@ -40,6 +40,16 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
+    # OAuth 설정 (.env의 OAuth 값들로 자동 치환)
+    GITHUB_CLIENT_ID: str = "your-github-client-id"
+    GITHUB_CLIENT_SECRET: str = "your-github-client-secret"
+    GOOGLE_CLIENT_ID: str = "your-google-client-id"
+    GOOGLE_CLIENT_SECRET: str = "your-google-client-secret"
+    GOOGLE_REDIRECT_URI: str = "http://localhost:3000/auth/callback/google"
+    KAKAO_CLIENT_ID: str = "your-kakao-client-id"
+    KAKAO_CLIENT_SECRET: str = "your-kakao-client-secret"
+    KAKAO_REDIRECT_URI: str = "http://localhost:3000/auth/callback/kakao"
+
     # Redis 설정 (.env의 REDIS_URL 값으로 자동 치환)
     REDIS_URL: str = "redis://localhost:6379"
 
