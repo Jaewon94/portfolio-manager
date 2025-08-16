@@ -149,6 +149,7 @@ export interface CreateNoteResponse {
 
 export interface UpdateNoteRequest extends UpdateNoteDto {
   id: string;
+  is_archived?: boolean;
 }
 
 export interface UpdateNoteResponse {
@@ -239,7 +240,7 @@ export interface SearchResult {
   }>;
 }
 
-export interface AutocompleteRequest {
+export interface AutocompleteRequest extends Record<string, unknown> {
   query: string;
   type?: 'projects' | 'notes' | 'tags' | 'tech_stack';
   limit?: number;
@@ -412,7 +413,7 @@ export interface ApiClientConfig {
   };
 }
 
-export interface ApiError {
+export interface ApiErrorData {
   code: string;
   message: string;
   details?: unknown;

@@ -319,7 +319,7 @@ export interface PaginationParams {
 /**
  * Project 필터링 파라미터
  */
-export interface ProjectFilters extends PaginationParams {
+export interface ProjectFilters extends PaginationParams, Record<string, unknown> {
   status?: ProjectStatus;
   visibility?: ProjectVisibility;
   featured?: boolean;
@@ -333,7 +333,7 @@ export interface ProjectFilters extends PaginationParams {
 /**
  * Note 필터링 파라미터
  */
-export interface NoteFilters extends PaginationParams {
+export interface NoteFilters extends PaginationParams, Record<string, unknown> {
   project_id?: string;
   type?: NoteType;
   tags?: string[];
@@ -345,7 +345,7 @@ export interface NoteFilters extends PaginationParams {
 /**
  * 검색 파라미터
  */
-export interface SearchParams {
+export interface SearchParams extends Record<string, unknown> {
   query: string;
   type?: 'projects' | 'notes' | 'users' | 'all';
   filters?: Record<string, unknown>;
