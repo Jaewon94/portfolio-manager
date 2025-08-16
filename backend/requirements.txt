@@ -22,6 +22,11 @@ python-multipart==0.0.6  # 파일 업로드 지원 (multipart/form-data 파싱)
 python-dotenv==1.0.0  # .env 파일 로드 (환경변수 관리)
 httpx==0.25.2  # 비동기 HTTP 클라이언트 (외부 API 호출)
 
+# 미디어 처리
+pillow==10.1.0  # 이미지 처리 라이브러리 (리사이즈, 썸네일, 변환)
+pillow-heif==0.13.0  # HEIF/HEIC 이미지 지원 (iPhone 사진 포맷)
+aiofiles==23.2.1  # 비동기 파일 I/O (파일 업로드/다운로드)
+
 # 개발 도구
 pytest==7.4.3  # 테스트 프레임워크 (단위/통합 테스트)
 pytest-asyncio==0.21.1  # 비동기 테스트 지원 (async/await 테스트)
