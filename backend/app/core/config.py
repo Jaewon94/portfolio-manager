@@ -22,9 +22,7 @@ class Settings(BaseSettings):
     ALLOWED_HOSTS: str = "http://localhost:3000,http://localhost:8000"
 
     # 데이터베이스 설정 (.env의 DATABASE_URL 값으로 자동 치환)
-    DATABASE_URL: str = (
-        "postgresql+psycopg2://postgres:postgres@localhost:5432/portfolio_manager"
-    )
+    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/portfolio"
 
     # JWT 설정 (.env의 SECRET_KEY 등으로 자동 치환)
     SECRET_KEY: str = "your-secret-key-change-in-production"
