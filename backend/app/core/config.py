@@ -22,7 +22,17 @@ class Settings(BaseSettings):
     ALLOWED_HOSTS: str = "http://localhost:3000,http://localhost:8000"
 
     # 데이터베이스 설정 (.env의 DATABASE_URL 값으로 자동 치환)
-    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/portfolio"
+    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/portfolio_manager"
+    
+    @property
+    def SYNC_DATABASE_URL(self) -> str:
+        """Alembic용 동기 데이터베이스 URL"""
+        return self.DATABASE_URL.replace("postgresql+asyncpg://", "postgresql+psycopg2://")
+    
+    @property
+    def is_production(self) -> bool:
+        """프로덕션 환경 여부"""
+        return self.ENVIRONMENT.lower() == "production"
 
     # JWT 설정 (.env의 SECRET_KEY 등으로 자동 치환)
     SECRET_KEY: str = "your-secret-key-change-in-production"

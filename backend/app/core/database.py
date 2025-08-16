@@ -5,9 +5,10 @@
 from typing import AsyncGenerator
 from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.orm import sessionmaker
 
 from app.core.config import settings
+from app.models import Base  # Base import 경로 수정
 
 # Async 엔진 (메인 사용)
 async_engine = create_async_engine(
@@ -15,6 +16,9 @@ async_engine = create_async_engine(
     echo=not settings.is_production,  # 프로덕션에서는 쿼리 로깅 비활성화
     future=True,
     pool_pre_ping=True,  # 연결 상태 확인
+    pool_size=10,  # 연결 풀 크기
+    max_overflow=20,  # 추가 연결 허용 수
+    pool_recycle=3600,  # 1시간마다 연결 재사용
 )
 
 # Sync 엔진 (Alembic용)
@@ -23,6 +27,8 @@ engine = create_engine(
     echo=not settings.is_production,
     future=True,
     pool_pre_ping=True,
+    pool_size=5,  # Alembic용은 적은 연결로 충분
+    max_overflow=10,
 )
 
 # 세션 팩토리
@@ -39,10 +45,6 @@ SessionLocal = sessionmaker(
     autocommit=False,
     autoflush=False,
 )
-
-# Base 클래스
-Base = declarative_base()
-
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """

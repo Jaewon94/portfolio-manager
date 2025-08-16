@@ -32,8 +32,8 @@ from app.models.note import Note, NoteType
 from app.models.media import Media, MediaType, MediaTargetType
 from app.core.config import settings
 
-# 환경변수에서 DATABASE_URL 가져오기
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+# 환경변수에서 DATABASE_URL 가져오기 (Alembic용 동기 URL 사용)
+config.set_main_option("sqlalchemy.url", settings.SYNC_DATABASE_URL)
 
 target_metadata = Base.metadata
 
