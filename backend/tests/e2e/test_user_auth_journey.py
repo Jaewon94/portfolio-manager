@@ -92,8 +92,8 @@ class TestUserAuthJourney:
     async def _test_manual_token_flow(self, async_client: AsyncClient, test_user):
         """테스트 로그인이 없을 때 수동 토큰으로 플로우 테스트"""
         # 수동으로 토큰 생성
-        access_token = create_access_token(subject=str(test_user.id))
-        refresh_token = create_refresh_token(subject=str(test_user.id))
+        access_token = create_access_token(subject=test_user.id)
+        refresh_token = create_refresh_token(subject=test_user.id)
 
         headers = {"Authorization": f"Bearer {access_token}"}
 
@@ -102,7 +102,7 @@ class TestUserAuthJourney:
 
         if me_response.status_code == 200:
             user_data = me_response.json()
-            assert user_data["id"] == test_user.id
+            assert user_data["id"] == str(test_user.id)
             print("✅ 수동 토큰으로 사용자 정보 조회 성공!")
         else:
             print(
@@ -226,7 +226,7 @@ class TestUserAuthJourney:
                 if response.status_code == 200:
                     success_count += 1
                     user_data = response.json()
-                    assert user_data["id"] == test_user.id
+                    assert user_data["id"] == str(test_user.id)
 
         # 최소 일부는 성공해야 함
         assert success_count > 0, "동시 요청 중 일부는 성공해야 함"

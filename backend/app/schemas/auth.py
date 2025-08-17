@@ -26,7 +26,7 @@ class RefreshTokenRequest(BaseModel):
 class UserResponse(BaseModel):
     """사용자 정보 응답"""
 
-    id: str
+    id: int
     email: str
     name: str
     bio: Optional[str] = None
@@ -63,7 +63,7 @@ class SessionInfo(BaseModel):
     """세션 정보"""
 
     id: str
-    user_id: str
+    user_id: int
     ip_address: Optional[str] = None
     user_agent: Optional[str] = None
     created_at: datetime
@@ -85,5 +85,5 @@ class Token(BaseModel):
 class TokenPayload(BaseModel):
     """토큰 페이로드 스키마 (내부 사용)"""
 
-    sub: str
+    sub: int
     type: str
