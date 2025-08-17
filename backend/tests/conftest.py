@@ -244,6 +244,12 @@ async def authenticated_client(
 
     token = create_access_token(subject=str(test_user.id))
     async_client.headers.update({"Authorization": f"Bearer {token}"})
+
+    # 디버깅용 출력
+    print(f"Created token for user_id: {test_user.id}")
+    print(f"Token: {token[:50]}...")
+    print(f"Authorization header: Bearer {token[:50]}...")
+
     return async_client
 
 
@@ -326,6 +332,9 @@ def mock_upload_file():
 
         async def read(self, size: int = -1) -> bytes:
             return self.file.read(size)
+
+        async def seek(self, offset: int, whence: int = 0) -> int:
+            return self.file.seek(offset, whence)
 
         async def close(self):
             self.file.close()

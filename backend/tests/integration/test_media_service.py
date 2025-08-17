@@ -12,6 +12,7 @@ from app.models.media import Media, MediaTargetType, MediaType
 from app.models.project import Project
 from app.models.user import User
 from app.services.media import MediaService
+from fastapi import HTTPException
 from PIL import Image
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -41,7 +42,7 @@ class TestMediaServiceIntegration:
         self.media_service = MediaService(test_db)
 
         # 임시 미디어 디렉토리 설정
-        self.media_service.media_root = self.temp_dir
+        self.media_service.upload_dir = self.temp_dir
 
     def create_test_image(
         self, width: int = 800, height: int = 600, format: str = "PNG"
@@ -64,7 +65,8 @@ class TestMediaServiceIntegration:
     ):
         """이미지 업로드 전체 플로우 테스트"""
         # 서비스 초기화
-        media_service = MediaService(test_db, str(temp_media_dir))
+        media_service = MediaService(test_db)
+        media_service.upload_dir = temp_media_dir
 
         # 테스트 이미지 생성
         image_buffer = self.create_test_image(800, 600, "PNG")
@@ -73,7 +75,7 @@ class TestMediaServiceIntegration:
         )
 
         # 이미지 업로드
-        media = await media_service.upload_media(
+        media = await media_service.upload_file(
             file=upload_file,
             target_type=MediaTargetType.PROJECT,
             target_id=test_project.id,
@@ -85,23 +87,23 @@ class TestMediaServiceIntegration:
         assert media.type == MediaType.IMAGE
         assert media.target_type == MediaTargetType.PROJECT
         assert media.target_id == self.project.id
-        assert media.original_filename == "test-image.png"
+        assert media.original_name == "test-image.png"
         assert media.mime_type == "image/png"
         assert media.file_size > 0
 
         # 메타데이터 검증
-        assert "width" in media.metadata
-        assert "height" in media.metadata
-        assert media.metadata["width"] == 800
-        assert media.metadata["height"] == 600
+        assert media.width == 800
+        assert media.height == 600
 
         # 파일 시스템 검증
-        file_path = self.temp_dir / media.file_path.lstrip("/")
+        file_path = Path(media.file_path)
         assert file_path.exists()
         assert file_path.is_file()
 
         # 데이터베이스 검증
-        saved_media = await self.media_service.get_media_by_id(media.id)
+        saved_media = await self.media_service.get_media_by_id(
+            media.id, user_id=self.user.id
+        )
         assert saved_media is not None
         assert saved_media.id == media.id
 
@@ -116,7 +118,7 @@ class TestMediaServiceIntegration:
         )
 
         # 문서 업로드
-        media = await self.media_service.upload_media(
+        media = await self.media_service.upload_file(
             file=upload_file,
             target_type=MediaTargetType.PROJECT,
             target_id=self.project.id,
@@ -128,12 +130,12 @@ class TestMediaServiceIntegration:
         assert media.type == MediaType.DOCUMENT
         assert media.target_type == MediaTargetType.PROJECT
         assert media.target_id == self.project.id
-        assert media.original_filename == "test-doc.txt"
+        assert media.original_name == "test-doc.txt"
         assert media.mime_type == "text/plain"
         assert media.file_size == len(content.encode())
 
         # 파일 시스템 검증
-        file_path = self.temp_dir / media.file_path.lstrip("/")
+        file_path = Path(media.file_path)
         assert file_path.exists()
         assert file_path.read_text() == content
 
@@ -147,7 +149,7 @@ class TestMediaServiceIntegration:
         )
 
         # 업로드
-        media = await self.media_service.upload_media(
+        media = await self.media_service.upload_file(
             file=upload_file,
             target_type=MediaTargetType.PROJECT,
             target_id=self.project.id,
@@ -155,8 +157,8 @@ class TestMediaServiceIntegration:
         )
 
         # 원본 이미지 검증
-        assert media.metadata["width"] == 2000
-        assert media.metadata["height"] == 1500
+        assert media.width == 2000
+        assert media.height == 1500
 
         # 썸네일 생성 (서비스에 썸네일 기능이 있다면)
         # thumbnail_path = await self.media_service.create_thumbnail(media.id)
@@ -187,7 +189,7 @@ class TestMediaServiceIntegration:
             filename="test-image.png", content=image_buffer, content_type="image/png"
         )
 
-        media = await self.media_service.upload_media(
+        media = await self.media_service.upload_file(
             file=upload_file,
             target_type=MediaTargetType.PROJECT,
             target_id=self.project.id,
@@ -217,7 +219,7 @@ class TestMediaServiceIntegration:
             filename="test-image.png", content=image_buffer, content_type="image/png"
         )
 
-        media = await self.media_service.upload_media(
+        media = await self.media_service.upload_file(
             file=upload_file,
             target_type=MediaTargetType.PROJECT,
             target_id=self.project.id,
@@ -225,7 +227,7 @@ class TestMediaServiceIntegration:
         )
 
         # 파일 존재 확인
-        file_path = self.temp_dir / media.file_path.lstrip("/")
+        file_path = Path(media.file_path)
         assert file_path.exists()
 
         # 미디어 삭제
@@ -252,7 +254,7 @@ class TestMediaServiceIntegration:
                 content_type="image/png",
             )
 
-            media = await self.media_service.upload_media(
+            media = await self.media_service.upload_file(
                 file=upload_file,
                 target_type=MediaTargetType.PROJECT,
                 target_id=self.project.id,
@@ -284,8 +286,8 @@ class TestMediaServiceIntegration:
             content_type="application/x-executable",
         )
 
-        with pytest.raises(ValueError, match="지원하지 않는 파일 형식"):
-            await self.media_service.upload_media(
+        with pytest.raises(HTTPException, match="Unsupported file type"):
+            await self.media_service.upload_file(
                 file=invalid_file,
                 target_type=MediaTargetType.PROJECT,
                 target_id=self.project.id,
@@ -301,8 +303,8 @@ class TestMediaServiceIntegration:
                 content_type="text/plain",
             )
 
-            with pytest.raises(ValueError, match="파일 크기 초과"):
-                await self.media_service.upload_media(
+            with pytest.raises(HTTPException, match="File too large"):
+                await self.media_service.upload_file(
                     file=large_file,
                     target_type=MediaTargetType.PROJECT,
                     target_id=self.project.id,
@@ -315,8 +317,8 @@ class TestMediaServiceIntegration:
             filename="test.png", content=image_buffer, content_type="image/png"
         )
 
-        with pytest.raises(ValueError, match="존재하지 않는"):
-            await self.media_service.upload_media(
+        with pytest.raises(HTTPException, match="Project not found"):
+            await self.media_service.upload_file(
                 file=upload_file,
                 target_type=MediaTargetType.PROJECT,
                 target_id=99999,  # 존재하지 않는 ID
