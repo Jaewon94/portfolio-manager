@@ -11,7 +11,19 @@ global.console.error = jest.fn();
 
 // Mock IntersectionObserver
 global.IntersectionObserver = class IntersectionObserver {
-  constructor() {}
+  root: Element | null = null;
+  rootMargin: string = '0px';
+  thresholds: ReadonlyArray<number> = [0];
+
+  constructor(
+    callback: IntersectionObserverCallback,
+    options?: IntersectionObserverInit
+  ) {
+    // Mock implementation - parameters intentionally unused for testing
+    void callback;
+    void options;
+  }
+
   observe() {
     return null;
   }
@@ -21,7 +33,10 @@ global.IntersectionObserver = class IntersectionObserver {
   unobserve() {
     return null;
   }
-};
+  takeRecords(): IntersectionObserverEntry[] {
+    return [];
+  }
+} as typeof IntersectionObserver;
 
 // Mock ResizeObserver
 global.ResizeObserver = class ResizeObserver {
@@ -40,7 +55,7 @@ global.ResizeObserver = class ResizeObserver {
 // Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
-  value: jest.fn().mockImplementation(query => ({
+  value: jest.fn().mockImplementation((query) => ({
     matches: false,
     media: query,
     onchange: null,
@@ -53,25 +68,32 @@ Object.defineProperty(window, 'matchMedia', {
 });
 
 // Mock window.location
-delete (window as any).location;
-window.location = {
-  href: 'http://localhost:3000',
-  origin: 'http://localhost:3000',
-  protocol: 'http:',
-  host: 'localhost:3000',
-  hostname: 'localhost',
-  port: '3000',
-  pathname: '/',
-  search: '',
-  hash: '',
-  assign: jest.fn(),
-  reload: jest.fn(),
-  replace: jest.fn(),
-} as any;
+Object.defineProperty(window, 'location', {
+  value: {
+    href: 'http://localhost:3000',
+    origin: 'http://localhost:3000',
+    protocol: 'http:',
+    host: 'localhost:3000',
+    hostname: 'localhost',
+    port: '3000',
+    pathname: '/',
+    search: '',
+    hash: '',
+    ancestorOrigins: {} as DOMStringList,
+    assign: jest.fn(),
+    reload: jest.fn(),
+    replace: jest.fn(),
+  },
+  writable: true,
+});
 
 // Mock URLSearchParams
 global.URLSearchParams = class URLSearchParams {
   private params = new Map<string, string>();
+
+  get size(): number {
+    return this.params.size;
+  }
 
   constructor(init?: string | string[][] | Record<string, string>) {
     if (typeof init === 'string') {
@@ -79,7 +101,11 @@ global.URLSearchParams = class URLSearchParams {
       const pairs = init.split('&');
       for (const pair of pairs) {
         const [key, value] = pair.split('=');
-        if (key) this.params.set(decodeURIComponent(key), decodeURIComponent(value || ''));
+        if (key)
+          this.params.set(
+            decodeURIComponent(key),
+            decodeURIComponent(value || '')
+          );
       }
     } else if (Array.isArray(init)) {
       for (const [key, value] of init) {
@@ -104,12 +130,41 @@ global.URLSearchParams = class URLSearchParams {
     return this.params.get(name) || null;
   }
 
+  getAll(name: string): string[] {
+    const value = this.params.get(name);
+    return value ? [value] : [];
+  }
+
   has(name: string): boolean {
     return this.params.has(name);
   }
 
   set(name: string, value: string): void {
     this.params.set(name, value);
+  }
+
+  sort(): void {
+    // Simple mock implementation
+  }
+
+  forEach(
+    callback: (value: string, key: string, parent: URLSearchParams) => void
+  ): void {
+    for (const [key, value] of this.params) {
+      callback(value, key, this);
+    }
+  }
+
+  entries(): IterableIterator<[string, string]> {
+    return this.params.entries();
+  }
+
+  keys(): IterableIterator<string> {
+    return this.params.keys();
+  }
+
+  values(): IterableIterator<string> {
+    return this.params.values();
   }
 
   toString(): string {
@@ -123,7 +178,7 @@ global.URLSearchParams = class URLSearchParams {
   *[Symbol.iterator](): IterableIterator<[string, string]> {
     yield* this.params;
   }
-};
+} as unknown as typeof URLSearchParams;
 
 // File API mocks for media tests
 global.File = class File {
@@ -132,7 +187,11 @@ global.File = class File {
   type: string;
   lastModified: number;
 
-  constructor(chunks: (string | ArrayBuffer)[], filename: string, options: { type?: string } = {}) {
+  constructor(
+    chunks: (string | ArrayBuffer)[],
+    filename: string,
+    options: { type?: string } = {}
+  ) {
     this.name = filename;
     this.type = options.type || '';
     this.size = chunks.reduce((size, chunk) => {
@@ -141,24 +200,29 @@ global.File = class File {
     }, 0);
     this.lastModified = Date.now();
   }
-} as any;
+} as typeof File;
 
 global.FormData = class FormData {
-  private data = new Map<string, any>();
+  private data = new Map<string, FormDataEntryValue>();
 
-  append(name: string, value: any): void {
+  append(name: string, value: FormDataEntryValue): void {
     this.data.set(name, value);
   }
 
-  get(name: string): any {
-    return this.data.get(name);
+  get(name: string): FormDataEntryValue | null {
+    return this.data.get(name) || null;
+  }
+
+  getAll(name: string): FormDataEntryValue[] {
+    const value = this.data.get(name);
+    return value ? [value] : [];
   }
 
   has(name: string): boolean {
     return this.data.has(name);
   }
 
-  set(name: string, value: any): void {
+  set(name: string, value: FormDataEntryValue): void {
     this.data.set(name, value);
   }
 
@@ -166,7 +230,27 @@ global.FormData = class FormData {
     this.data.delete(name);
   }
 
-  *[Symbol.iterator](): IterableIterator<[string, any]> {
+  forEach(
+    callback: (value: FormDataEntryValue, key: string, parent: FormData) => void
+  ): void {
+    for (const [key, value] of this.data) {
+      callback(value, key, this);
+    }
+  }
+
+  entries(): IterableIterator<[string, FormDataEntryValue]> {
+    return this.data.entries();
+  }
+
+  keys(): IterableIterator<string> {
+    return this.data.keys();
+  }
+
+  values(): IterableIterator<FormDataEntryValue> {
+    return this.data.values();
+  }
+
+  *[Symbol.iterator](): IterableIterator<[string, FormDataEntryValue]> {
     yield* this.data;
   }
-} as any;
+} as unknown as typeof FormData;

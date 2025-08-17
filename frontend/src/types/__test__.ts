@@ -4,21 +4,90 @@
  */
 
 import {
-  // Database Types
-  User, Project, Note,
-  UserRole, ProjectStatus, ProjectVisibility, NoteType,
-  ProjectWithRelations,
-  CreateProjectDto, CreateNoteDto,
-  
+  CreateNoteDto,
+  CreateProjectDto,
+  GetProjectsResponse,
   // API Types
-  LoginRequest, GetProjectsResponse, SearchResult,
-  
-  // UI Types
-  ProjectFormData, AuthState,
-  
-  // Type Guards
-  isUser, isProject, isNote, isSuccessResponse, isErrorResponse
-} from './index';
+  LoginRequest,
+  Note,
+  NoteType,
+  Project,
+  ProjectStatus,
+  ProjectVisibility,
+  ProjectWithRelations,
+  SearchResult,
+  // Database Types
+  User,
+} from './api';
+import { UserRole } from './database';
+
+// 테스트 타입들 (기본값 사용)
+interface ProjectFormData {
+  slug: string;
+  title: string;
+  description: string;
+  tech_stack: string[];
+  categories: string[];
+  tags: string[];
+  status: ProjectStatus;
+  visibility: ProjectVisibility;
+  featured: boolean;
+}
+
+interface AuthState {
+  user: User | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  error: string | null;
+  login: () => Promise<void>;
+  logout: () => Promise<void>;
+  refreshToken: () => Promise<void>;
+  clearError: () => void;
+}
+
+// Type guards (기본 구현)
+const isUser = (obj: unknown): obj is User => {
+  return (
+    typeof obj === 'object' && obj !== null && 'id' in obj && 'email' in obj
+  );
+};
+
+const isProject = (obj: unknown): obj is Project => {
+  return (
+    typeof obj === 'object' && obj !== null && 'id' in obj && 'title' in obj
+  );
+};
+
+const isNote = (obj: unknown): obj is Note => {
+  return (
+    typeof obj === 'object' &&
+    obj !== null &&
+    'id' in obj &&
+    'project_id' in obj
+  );
+};
+
+const isSuccessResponse = (
+  obj: unknown
+): obj is { success: true; data: unknown } => {
+  return (
+    typeof obj === 'object' &&
+    obj !== null &&
+    'success' in obj &&
+    (obj as { success: unknown }).success === true
+  );
+};
+
+const isErrorResponse = (
+  obj: unknown
+): obj is { success: false; error: unknown } => {
+  return (
+    typeof obj === 'object' &&
+    obj !== null &&
+    'success' in obj &&
+    (obj as { success: unknown }).success === false
+  );
+};
 
 // =============================================================================
 // Database Types 테스트
@@ -26,7 +95,7 @@ import {
 
 // User 타입 테스트
 const testUser: User = {
-  id: 'test-user-id',
+  id: 1,
   email: 'test@example.com',
   name: 'Test User',
   bio: 'Test bio',
@@ -34,13 +103,13 @@ const testUser: User = {
   role: UserRole.USER,
   is_verified: true,
   created_at: new Date(),
-  updated_at: new Date()
+  updated_at: new Date(),
 };
 
 // Project 타입 테스트
 const testProject: Project = {
-  id: 'test-project-id',
-  owner_id: 'test-user-id',
+  id: 2,
+  owner_id: 1,
   slug: 'test-project',
   title: 'Test Project',
   description: 'Test project description',
@@ -54,13 +123,13 @@ const testProject: Project = {
   view_count: 0,
   like_count: 0,
   created_at: new Date(),
-  updated_at: new Date()
+  updated_at: new Date(),
 };
 
 // Note 타입 테스트
 const testNote: Note = {
-  id: 'test-note-id',
-  project_id: 'test-project-id',
+  id: 3,
+  project_id: 2,
   type: NoteType.LEARN,
   title: 'Test Note',
   content: { type: 'markdown', body: '# Test note content' },
@@ -68,7 +137,7 @@ const testNote: Note = {
   is_pinned: false,
   is_archived: false,
   created_at: new Date(),
-  updated_at: new Date()
+  updated_at: new Date(),
 };
 
 // Relations 타입 테스트
@@ -76,7 +145,7 @@ const testProjectWithRelations: ProjectWithRelations = {
   ...testProject,
   owner: testUser,
   notes: [testNote],
-  media: []
+  media: [],
 };
 
 // =============================================================================
@@ -89,15 +158,15 @@ const testCreateProjectDto: CreateProjectDto = {
   description: 'New project description',
   tech_stack: ['React'],
   status: ProjectStatus.DRAFT,
-  visibility: ProjectVisibility.PRIVATE
+  visibility: ProjectVisibility.PRIVATE,
 };
 
 const testCreateNoteDto: CreateNoteDto = {
-  project_id: 'test-project-id',
+  project_id: 2,
   type: NoteType.CHANGE,
   title: 'New Note',
   content: { type: 'markdown', body: 'Content' },
-  tags: ['change']
+  tags: ['change'],
 };
 
 // =============================================================================
@@ -106,7 +175,7 @@ const testCreateNoteDto: CreateNoteDto = {
 
 const testLoginRequest: LoginRequest = {
   provider: 'github',
-  redirect_url: '/dashboard'
+  redirect_url: '/dashboard',
 };
 
 const testGetProjectsResponse: GetProjectsResponse = {
@@ -115,21 +184,23 @@ const testGetProjectsResponse: GetProjectsResponse = {
     total: 1,
     page: 1,
     pageSize: 10,
-    totalPages: 1
-  }
+    totalPages: 1,
+  },
 };
 
 const testSearchResult: SearchResult = {
-  projects: [{
-    ...testProjectWithRelations,
-    highlight: {
-      title: '<mark>Test</mark> Project',
-      description: '<mark>Test</mark> description'
+  projects: [
+    {
+      ...testProjectWithRelations,
+      highlight: {
+        title: '<mark>Test</mark> Project',
+        description: '<mark>Test</mark> description',
+      },
+      type: 'project',
     },
-    type: 'project'
-  }],
+  ],
   notes: [],
-  users: []
+  users: [],
 };
 
 // =============================================================================
@@ -145,7 +216,7 @@ const testProjectFormData: ProjectFormData = {
   tags: ['form'],
   status: ProjectStatus.DRAFT,
   visibility: ProjectVisibility.PUBLIC,
-  featured: false
+  featured: false,
 };
 
 const testAuthState: AuthState = {
@@ -156,7 +227,7 @@ const testAuthState: AuthState = {
   login: async () => {},
   logout: async () => {},
   refreshToken: async () => {},
-  clearError: () => {}
+  clearError: () => {},
 };
 
 // =============================================================================
@@ -169,7 +240,10 @@ console.log('isProject test:', isProject(testProject)); // true
 console.log('isNote test:', isNote(testNote)); // true
 
 const successResponse = { success: true, data: testUser };
-const errorResponse = { success: false, error: { code: 'ERR', message: 'Error' } };
+const errorResponse = {
+  success: false,
+  error: { code: 'ERR', message: 'Error' },
+};
 
 console.log('isSuccessResponse test:', isSuccessResponse(successResponse)); // true
 console.log('isErrorResponse test:', isErrorResponse(errorResponse)); // true
@@ -189,7 +263,7 @@ export const typeTests = {
   testGetProjectsResponse,
   testSearchResult,
   testProjectFormData,
-  testAuthState
+  testAuthState,
 };
 
 console.log('TypeScript 타입 정의 테스트 완료');

@@ -47,8 +47,8 @@ export const useAuthStore = create<AuthState>()(
         }
 
         try {
-          console.log('🔍 /auth/me API 호출');
-          const response = await fetch('http://localhost:8000/api/v1/auth/me', {
+          console.log('🔍 /auth/me/ API 호출');
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me/`, {
             headers: {
               Authorization: `Bearer ${token}`,
               'Content-Type': 'application/json',
@@ -104,7 +104,7 @@ export const useAuthStore = create<AuthState>()(
         try {
           // 직접 API 호출로 테스트
           const response = await fetch(
-            'http://localhost:8000/api/v1/auth/login',
+            `${process.env.NEXT_PUBLIC_API_URL}/auth/login/`,
             {
               method: 'POST',
               headers: {
@@ -158,7 +158,7 @@ export const useAuthStore = create<AuthState>()(
         try {
           // 실제 회원가입 API 호출
           const response = await fetch(
-            'http://localhost:8000/api/v1/auth/register',
+            `${process.env.NEXT_PUBLIC_API_URL}/auth/register/`,
             {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },

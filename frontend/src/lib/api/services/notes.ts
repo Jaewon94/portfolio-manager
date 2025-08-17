@@ -23,10 +23,10 @@ export class NotesService {
   /**
    * 프로젝트의 노트 목록 조회
    */
-  async getNotes(projectId: string, params?: Omit<GetNotesRequest, 'project_id'>): Promise<GetNotesResponse> {
+  async getNotes(projectId: number, params?: Omit<GetNotesRequest, 'project_id'>): Promise<GetNotesResponse> {
     try {
       const queryParams = { project_id: projectId, ...params };
-      return await this.client.get<GetNotesResponse>(`/api/projects/${projectId}/notes`, queryParams);
+      return await this.client.get<GetNotesResponse>(`/projects/${projectId}/notes/`, queryParams);
     } catch (error) {
       if (error instanceof ApiError) {
         throw error;
@@ -43,10 +43,10 @@ export class NotesService {
   /**
    * 노트 상세 조회
    */
-  async getNote(id: string, options?: Omit<GetNoteRequest, 'id'>): Promise<GetNoteResponse> {
+  async getNote(id: number, options?: Omit<GetNoteRequest, 'id'>): Promise<GetNoteResponse> {
     try {
       const params = options ? { ...options } : undefined;
-      return await this.client.get<GetNoteResponse>(`/api/notes/${id}`, params);
+      return await this.client.get<GetNoteResponse>(`/notes/${id}/`, params);
     } catch (error) {
       if (error instanceof ApiError) {
         throw error;
@@ -63,10 +63,10 @@ export class NotesService {
   /**
    * 노트 생성
    */
-  async createNote(projectId: string, data: Omit<CreateNoteRequest, 'project_id'>): Promise<CreateNoteResponse> {
+  async createNote(projectId: number, data: Omit<CreateNoteRequest, 'project_id'>): Promise<CreateNoteResponse> {
     try {
       const noteData = { project_id: projectId, ...data };
-      return await this.client.post<CreateNoteResponse>(`/api/projects/${projectId}/notes`, noteData);
+      return await this.client.post<CreateNoteResponse>(`/projects/${projectId}/notes/`, noteData);
     } catch (error) {
       if (error instanceof ApiError) {
         throw error;
@@ -83,9 +83,9 @@ export class NotesService {
   /**
    * 노트 수정
    */
-  async updateNote(id: string, data: Omit<UpdateNoteRequest, 'id'>): Promise<UpdateNoteResponse> {
+  async updateNote(id: number, data: Omit<UpdateNoteRequest, 'id'>): Promise<UpdateNoteResponse> {
     try {
-      return await this.client.patch<UpdateNoteResponse>(`/api/notes/${id}`, data);
+      return await this.client.patch<UpdateNoteResponse>(`/notes/${id}/`, data);
     } catch (error) {
       if (error instanceof ApiError) {
         throw error;
@@ -102,9 +102,9 @@ export class NotesService {
   /**
    * 노트 삭제
    */
-  async deleteNote(id: string): Promise<DeleteNoteResponse> {
+  async deleteNote(id: number): Promise<DeleteNoteResponse> {
     try {
-      return await this.client.delete<DeleteNoteResponse>(`/api/notes/${id}`);
+      return await this.client.delete<DeleteNoteResponse>(`/notes/${id}/`);
     } catch (error) {
       if (error instanceof ApiError) {
         throw error;
@@ -121,7 +121,7 @@ export class NotesService {
   /**
    * 노트 타입별 조회
    */
-  async getNotesByType(projectId: string, type: NoteType): Promise<NoteWithRelations[]> {
+  async getNotesByType(projectId: number, type: NoteType): Promise<NoteWithRelations[]> {
     try {
       const response = await this.getNotes(projectId, { type });
       return response.notes;
@@ -141,21 +141,21 @@ export class NotesService {
   /**
    * 노트 고정/고정 해제
    */
-  async toggleNotePinned(id: string, is_pinned: boolean): Promise<UpdateNoteResponse> {
+  async toggleNotePinned(id: number, is_pinned: boolean): Promise<UpdateNoteResponse> {
     return this.updateNote(id, { is_pinned });
   }
 
   /**
    * 노트 보관/보관 해제
    */
-  async toggleNoteArchived(id: string, is_archived: boolean): Promise<UpdateNoteResponse> {
+  async toggleNoteArchived(id: number, is_archived: boolean): Promise<UpdateNoteResponse> {
     return this.updateNote(id, { is_archived });
   }
 
   /**
    * 고정된 노트 목록 조회
    */
-  async getPinnedNotes(projectId: string): Promise<NoteWithRelations[]> {
+  async getPinnedNotes(projectId: number): Promise<NoteWithRelations[]> {
     try {
       const response = await this.getNotes(projectId, { is_pinned: true });
       return response.notes;
@@ -175,7 +175,7 @@ export class NotesService {
   /**
    * 노트 검색 (프로젝트 내)
    */
-  async searchNotes(projectId: string, query: string): Promise<NoteWithRelations[]> {
+  async searchNotes(projectId: number, query: string): Promise<NoteWithRelations[]> {
     try {
       const response = await this.getNotes(projectId, { search: query });
       return response.notes;
@@ -195,7 +195,7 @@ export class NotesService {
   /**
    * 노트에 태그 추가
    */
-  async addNoteTag(id: string, tag: string): Promise<UpdateNoteResponse> {
+  async addNoteTag(id: number, tag: string): Promise<UpdateNoteResponse> {
     try {
       const note = await this.getNote(id);
       const currentTags = note.note.tags || [];
@@ -222,7 +222,7 @@ export class NotesService {
   /**
    * 노트에서 태그 제거
    */
-  async removeNoteTag(id: string, tag: string): Promise<UpdateNoteResponse> {
+  async removeNoteTag(id: number, tag: string): Promise<UpdateNoteResponse> {
     try {
       const note = await this.getNote(id);
       const currentTags = note.note.tags || [];
@@ -242,3 +242,8 @@ export class NotesService {
     }
   }
 }
+
+// 기본 인스턴스 생성 및 export
+import { apiClient } from '../client';
+
+export const noteService = new NotesService(apiClient);

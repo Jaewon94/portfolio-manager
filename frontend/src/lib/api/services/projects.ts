@@ -12,7 +12,6 @@ import {
   CreateProjectResponse,
   UpdateProjectRequest,
   UpdateProjectResponse,
-  DeleteProjectRequest,
   DeleteProjectResponse,
   Project,
   ProjectWithRelations,
@@ -27,7 +26,7 @@ export class ProjectsService {
    */
   async getProjects(params?: GetProjectsRequest): Promise<GetProjectsResponse> {
     try {
-      return await this.client.get<GetProjectsResponse>('/api/projects', params);
+      return await this.client.get<GetProjectsResponse>('/projects/', params);
     } catch (error) {
       if (error instanceof ApiError) {
         throw error;
@@ -44,10 +43,10 @@ export class ProjectsService {
   /**
    * 프로젝트 상세 조회
    */
-  async getProject(id: string, options?: Omit<GetProjectRequest, 'id'>): Promise<GetProjectResponse> {
+  async getProject(id: number, options?: Omit<GetProjectRequest, 'id'>): Promise<GetProjectResponse> {
     try {
       const params = options ? { ...options } : undefined;
-      return await this.client.get<GetProjectResponse>(`/api/projects/${id}`, params);
+      return await this.client.get<GetProjectResponse>(`/projects/${id}/`, params);
     } catch (error) {
       if (error instanceof ApiError) {
         throw error;
@@ -66,7 +65,7 @@ export class ProjectsService {
    */
   async createProject(data: CreateProjectRequest): Promise<CreateProjectResponse> {
     try {
-      return await this.client.post<CreateProjectResponse>('/api/projects', data);
+      return await this.client.post<CreateProjectResponse>('/projects/', data);
     } catch (error) {
       if (error instanceof ApiError) {
         throw error;
@@ -83,9 +82,9 @@ export class ProjectsService {
   /**
    * 프로젝트 수정
    */
-  async updateProject(id: string, data: Omit<UpdateProjectRequest, 'id'>): Promise<UpdateProjectResponse> {
+  async updateProject(id: number, data: Omit<UpdateProjectRequest, 'id'>): Promise<UpdateProjectResponse> {
     try {
-      return await this.client.patch<UpdateProjectResponse>(`/api/projects/${id}`, data);
+      return await this.client.patch<UpdateProjectResponse>(`/projects/${id}/`, data);
     } catch (error) {
       if (error instanceof ApiError) {
         throw error;
@@ -102,9 +101,9 @@ export class ProjectsService {
   /**
    * 프로젝트 삭제
    */
-  async deleteProject(id: string): Promise<DeleteProjectResponse> {
+  async deleteProject(id: number): Promise<DeleteProjectResponse> {
     try {
-      return await this.client.delete<DeleteProjectResponse>(`/api/projects/${id}`);
+      return await this.client.delete<DeleteProjectResponse>(`/projects/${id}/`);
     } catch (error) {
       if (error instanceof ApiError) {
         throw error;
@@ -121,21 +120,21 @@ export class ProjectsService {
   /**
    * 프로젝트 상태 변경 (발행/초안)
    */
-  async updateProjectStatus(id: string, status: Project['status']): Promise<UpdateProjectResponse> {
+  async updateProjectStatus(id: number, status: Project['status']): Promise<UpdateProjectResponse> {
     return this.updateProject(id, { status });
   }
 
   /**
    * 프로젝트 가시성 변경 (공개/비공개)
    */
-  async updateProjectVisibility(id: string, visibility: Project['visibility']): Promise<UpdateProjectResponse> {
+  async updateProjectVisibility(id: number, visibility: Project['visibility']): Promise<UpdateProjectResponse> {
     return this.updateProject(id, { visibility });
   }
 
   /**
    * 프로젝트 추천 상태 토글
    */
-  async toggleProjectFeatured(id: string, featured: boolean): Promise<UpdateProjectResponse> {
+  async toggleProjectFeatured(id: number, featured: boolean): Promise<UpdateProjectResponse> {
     return this.updateProject(id, { featured });
   }
 
@@ -144,7 +143,7 @@ export class ProjectsService {
    */
   async getMyProjects(params?: Omit<GetProjectsRequest, 'owner_id'>): Promise<GetProjectsResponse> {
     try {
-      return await this.client.get<GetProjectsResponse>('/api/projects/me', params);
+      return await this.client.get<GetProjectsResponse>('/projects/me/', params);
     } catch (error) {
       if (error instanceof ApiError) {
         throw error;
@@ -182,3 +181,8 @@ export class ProjectsService {
     }
   }
 }
+
+// 기본 인스턴스 생성 및 export
+import { apiClient } from '../client';
+
+export const projectService = new ProjectsService(apiClient);
