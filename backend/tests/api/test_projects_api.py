@@ -24,17 +24,27 @@ class TestProjectsAPI:
 
         if response.status_code == 200:
             data = response.json()
-            assert isinstance(data, list)
+            assert isinstance(data, dict)
+            assert "projects" in data
+            assert "pagination" in data
 
     @pytest.mark.asyncio
     async def test_projects_list_with_auth(self, authenticated_client: AsyncClient):
         """프로젝트 목록 조회 - 인증됨"""
         response = await authenticated_client.get("/api/v1/projects/")
+
+        # 디버깅용 출력
+        print(f"Projects API - Response status: {response.status_code}")
+        print(f"Projects API - Response body: {response.text}")
+        print(f"Projects API - Response headers: {dict(response.headers)}")
+
         assert response.status_code in [200, 401]
 
         if response.status_code == 200:
             data = response.json()
-            assert isinstance(data, list)
+            assert isinstance(data, dict)
+            assert "projects" in data
+            assert "pagination" in data
 
     @pytest.mark.asyncio
     async def test_project_create_unauthorized(self, async_client: AsyncClient):

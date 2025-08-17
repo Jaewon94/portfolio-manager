@@ -28,7 +28,9 @@ class TestNotesAPI:
 
         if response.status_code == 200:
             data = response.json()
-            assert isinstance(data, list)
+            assert isinstance(data, dict)
+            assert "notes" in data
+            assert "pagination" in data
 
     @pytest.mark.asyncio
     async def test_notes_list_with_filters(self, authenticated_client: AsyncClient):
