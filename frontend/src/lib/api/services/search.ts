@@ -21,7 +21,7 @@ export class SearchService {
    */
   async search(params: SearchRequest): Promise<SearchResponse> {
     try {
-      return await this.client.get<SearchResponse>('/api/search', params);
+      return await this.client.get<SearchResponse>('/search/', params);
     } catch (error) {
       if (error instanceof ApiError) {
         throw error;
@@ -40,7 +40,7 @@ export class SearchService {
    */
   async autocomplete(params: AutocompleteRequest): Promise<AutocompleteResponse> {
     try {
-      return await this.client.get<AutocompleteResponse>('/api/search/autocomplete', params);
+      return await this.client.get<AutocompleteResponse>('/search/autocomplete/', params);
     } catch (error) {
       if (error instanceof ApiError) {
         throw error;

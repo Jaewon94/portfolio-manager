@@ -26,7 +26,7 @@ export class NotesService {
   async getNotes(projectId: string, params?: Omit<GetNotesRequest, 'project_id'>): Promise<GetNotesResponse> {
     try {
       const queryParams = { project_id: projectId, ...params };
-      return await this.client.get<GetNotesResponse>(`/api/projects/${projectId}/notes`, queryParams);
+      return await this.client.get<GetNotesResponse>(`/projects/${projectId}/notes/`, queryParams);
     } catch (error) {
       if (error instanceof ApiError) {
         throw error;
@@ -46,7 +46,7 @@ export class NotesService {
   async getNote(id: string, options?: Omit<GetNoteRequest, 'id'>): Promise<GetNoteResponse> {
     try {
       const params = options ? { ...options } : undefined;
-      return await this.client.get<GetNoteResponse>(`/api/notes/${id}`, params);
+      return await this.client.get<GetNoteResponse>(`/notes/${id}/`, params);
     } catch (error) {
       if (error instanceof ApiError) {
         throw error;
@@ -66,7 +66,7 @@ export class NotesService {
   async createNote(projectId: string, data: Omit<CreateNoteRequest, 'project_id'>): Promise<CreateNoteResponse> {
     try {
       const noteData = { project_id: projectId, ...data };
-      return await this.client.post<CreateNoteResponse>(`/api/projects/${projectId}/notes`, noteData);
+      return await this.client.post<CreateNoteResponse>(`/projects/${projectId}/notes/`, noteData);
     } catch (error) {
       if (error instanceof ApiError) {
         throw error;
@@ -85,7 +85,7 @@ export class NotesService {
    */
   async updateNote(id: string, data: Omit<UpdateNoteRequest, 'id'>): Promise<UpdateNoteResponse> {
     try {
-      return await this.client.patch<UpdateNoteResponse>(`/api/notes/${id}`, data);
+      return await this.client.patch<UpdateNoteResponse>(`/notes/${id}/`, data);
     } catch (error) {
       if (error instanceof ApiError) {
         throw error;
@@ -104,7 +104,7 @@ export class NotesService {
    */
   async deleteNote(id: string): Promise<DeleteNoteResponse> {
     try {
-      return await this.client.delete<DeleteNoteResponse>(`/api/notes/${id}`);
+      return await this.client.delete<DeleteNoteResponse>(`/notes/${id}/`);
     } catch (error) {
       if (error instanceof ApiError) {
         throw error;
@@ -242,3 +242,8 @@ export class NotesService {
     }
   }
 }
+
+// 기본 인스턴스 생성 및 export
+import { apiClient } from '../client';
+
+export const noteService = new NotesService(apiClient);

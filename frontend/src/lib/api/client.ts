@@ -31,12 +31,18 @@ export class ApiClient {
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
     
+    // 자동으로 토큰 추가
+    const headers = { ...this.defaultHeaders, ...options.headers };
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('access_token');
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+    }
+    
     const config: RequestInit = {
       ...options,
-      headers: {
-        ...this.defaultHeaders,
-        ...options.headers
-      },
+      headers,
       signal: AbortSignal.timeout(this.timeout)
     };
 
@@ -271,12 +277,17 @@ export class ApiError extends Error {
  */
 export const createApiClient = (config?: Partial<ApiClientConfig>): ApiClient => {
   const defaultConfig: ApiClientConfig = {
-    baseUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
+    baseUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1',
     timeout: 30000,
     defaultHeaders: {
       'Accept': 'application/json',
     }
   };
+
+  // 개발 환경에서만 베이스 URL 로그
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🌐 API Client Base URL:', defaultConfig.baseUrl);
+  }
 
   return new ApiClient({ ...defaultConfig, ...config });
 };

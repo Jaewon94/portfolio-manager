@@ -32,7 +32,7 @@ export class MediaService {
         formData.append('alt_text', altText);
       }
 
-      return await this.client.upload<UploadMediaResponse>('/api/media/upload', formData);
+      return await this.client.upload<UploadMediaResponse>('/media/upload/', formData);
     } catch (error) {
       if (error instanceof ApiError) {
         throw error;
@@ -51,7 +51,7 @@ export class MediaService {
    */
   async getMedia(id: string): Promise<GetMediaResponse> {
     try {
-      return await this.client.get<GetMediaResponse>(`/api/media/${id}`);
+      return await this.client.get<GetMediaResponse>(`/media/${id}/`);
     } catch (error) {
       if (error instanceof ApiError) {
         throw error;
@@ -70,7 +70,7 @@ export class MediaService {
    */
   async deleteMedia(id: string): Promise<DeleteMediaResponse> {
     try {
-      return await this.client.delete<DeleteMediaResponse>(`/api/media/${id}`);
+      return await this.client.delete<DeleteMediaResponse>(`/media/${id}/`);
     } catch (error) {
       if (error instanceof ApiError) {
         throw error;
@@ -89,7 +89,7 @@ export class MediaService {
    */
   async getProjectMedia(projectId: string): Promise<Media[]> {
     try {
-      const response = await this.client.get<{ media: Media[] }>(`/api/projects/${projectId}/media`);
+      const response = await this.client.get<{ media: Media[] }>(`/projects/${projectId}/media/`);
       return response.media;
     } catch (error) {
       if (error instanceof ApiError) {
@@ -109,7 +109,7 @@ export class MediaService {
    */
   async getNoteMedia(noteId: string): Promise<Media[]> {
     try {
-      const response = await this.client.get<{ media: Media[] }>(`/api/notes/${noteId}/media`);
+      const response = await this.client.get<{ media: Media[] }>(`/notes/${noteId}/media/`);
       return response.media;
     } catch (error) {
       if (error instanceof ApiError) {
@@ -156,7 +156,7 @@ export class MediaService {
    */
   async getMediaUrl(id: string, type: 'download' | 'preview' = 'preview'): Promise<string> {
     try {
-      const response = await this.client.get<{ url: string }>(`/api/media/${id}/url`, { type });
+      const response = await this.client.get<{ url: string }>(`/media/${id}/url/`, { type });
       return response.url;
     } catch (error) {
       if (error instanceof ApiError) {
@@ -176,7 +176,7 @@ export class MediaService {
    */
   async updateMediaMetadata(id: string, data: { alt_text?: string; is_public?: boolean }): Promise<Media> {
     try {
-      const response = await this.client.patch<{ media: Media }>(`/api/media/${id}`, data);
+      const response = await this.client.patch<{ media: Media }>(`/media/${id}/`, data);
       return response.media;
     } catch (error) {
       if (error instanceof ApiError) {

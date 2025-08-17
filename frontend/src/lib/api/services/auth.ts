@@ -20,7 +20,7 @@ export class AuthService {
    */
   async login(data: LoginRequest): Promise<LoginResponse> {
     try {
-      return await this.client.post<LoginResponse>('/api/auth/login', data);
+      return await this.client.post<LoginResponse>('/auth/login/', data);
     } catch (error) {
       if (error instanceof ApiError) {
         throw error;
@@ -39,7 +39,7 @@ export class AuthService {
    */
   async logout(data?: LogoutRequest): Promise<{ success: boolean }> {
     try {
-      const response = await this.client.post<{ success: boolean }>('/api/auth/logout', data);
+      const response = await this.client.post<{ success: boolean }>('/auth/logout/', data);
       // 로그아웃 성공 시 클라이언트에서 토큰 제거
       this.client.removeAuthToken();
       return response;
@@ -61,7 +61,7 @@ export class AuthService {
    */
   async refreshToken(data: RefreshTokenRequest): Promise<RefreshTokenResponse> {
     try {
-      const response = await this.client.post<RefreshTokenResponse>('/api/auth/refresh', data);
+      const response = await this.client.post<RefreshTokenResponse>('/auth/refresh/', data);
       // 새 토큰으로 업데이트
       this.client.setAuthToken(response.session_token);
       return response;
@@ -83,7 +83,7 @@ export class AuthService {
    */
   async me(): Promise<MeResponse> {
     try {
-      return await this.client.get<MeResponse>('/api/auth/me');
+      return await this.client.get<MeResponse>('/auth/me/');
     } catch (error) {
       if (error instanceof ApiError) {
         throw error;
