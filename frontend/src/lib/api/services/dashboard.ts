@@ -4,6 +4,7 @@
  */
 
 import { apiClient } from '../client';
+import { GetProjectsResponse } from '@/types/api';
 
 // 대시보드 통계 타입
 export interface DashboardStats {
@@ -23,11 +24,11 @@ export interface RecentProject {
   id: number;
   title: string;
   description: string;
-  status: 'active' | 'completed' | 'pending' | 'archived';
+  status: 'draft' | 'published' | 'archived';
   updated_at: string;
   view_count: number;
   like_count: number;
-  visibility: 'public' | 'private';
+  visibility: 'public' | 'private' | 'unlisted';
 }
 
 // 최근 활동 타입
@@ -62,12 +63,12 @@ export class DashboardService {
         const response = await apiClient.get<DashboardResponse>('/dashboard');
         console.log('✅ 대시보드 전용 API 응답:', response);
         return response;
-      } catch (dashboardError) {
+      } catch {
         console.log('⚠️ 대시보드 전용 API가 없음, 기존 API들로 구성...');
         
         // 기존 API들을 조합해서 대시보드 데이터 구성
         const [projectsResponse] = await Promise.all([
-          apiClient.get('/projects', { page: 1, page_size: 100 })
+          apiClient.get<GetProjectsResponse>('/projects', { page: 1, page_size: 100 })
         ]);
         
         const projects = projectsResponse.projects || [];
@@ -75,9 +76,9 @@ export class DashboardService {
         // 통계 계산
         const stats: DashboardStats = {
           total_projects: projects.length,
-          completed_projects: projects.filter(p => p.status === 'completed').length,
-          active_projects: projects.filter(p => p.status === 'active').length,
-          pending_projects: projects.filter(p => p.status === 'pending').length,
+          completed_projects: projects.filter(p => p.status === 'published').length,
+          active_projects: projects.filter(p => p.status === 'draft').length,
+          pending_projects: projects.filter(p => p.status === 'archived').length,
           total_notes: 0, // 노트 API로 별도 조회 필요
           public_projects: projects.filter(p => p.visibility === 'public').length,
           private_projects: projects.filter(p => p.visibility === 'private').length,
@@ -94,7 +95,7 @@ export class DashboardService {
             title: p.title,
             description: p.description || '',
             status: p.status,
-            updated_at: p.updated_at,
+            updated_at: p.updated_at.toString(),
             view_count: p.view_count || 0,
             like_count: p.like_count || 0,
             visibility: p.visibility
@@ -106,10 +107,10 @@ export class DashboardService {
           .slice(0, 5)
           .map((p, index) => ({
             id: index + 1,
-            type: p.status === 'completed' ? 'project_completed' : 'project_updated',
+            type: p.status === 'published' ? 'project_completed' : 'project_updated',
             title: p.title,
             description: `${p.title} 프로젝트가 업데이트되었습니다`,
-            created_at: p.updated_at,
+            created_at: p.updated_at.toString(),
             project_id: p.id,
             project_title: p.title
           }));

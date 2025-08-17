@@ -3,25 +3,27 @@
  * API 엔드포인트별 요청/응답 타입 정의
  */
 
+// Import all database types
 import {
-  User,
-  Project,
-  Note,
-  Media,
-  GithubRepository,
-  ProjectWithRelations,
-  NoteWithRelations,
-  UserWithRelations,
-  CreateProjectDto,
-  UpdateProjectDto,
-  CreateNoteDto,
-  UpdateNoteDto,
-  CreateMediaDto,
-  ProjectFilters,
-  NoteFilters,
-  SearchParams,
+  User, UserWithRelations, Project, ProjectWithRelations, Note, NoteWithRelations,
+  Media, AuthAccount, Session, GithubRepository,
+  NoteType, ProjectStatus, ProjectVisibility, TargetType, MediaType,
+  CreateProjectDto, UpdateProjectDto, CreateNoteDto, UpdateNoteDto, CreateMediaDto,
+  ProjectFilters, NoteFilters, SearchParams, PaginationParams,
   ApiResponse
 } from './database';
+
+export type {
+  User, UserWithRelations, Project, ProjectWithRelations, Note, NoteWithRelations,
+  Media, AuthAccount, Session, GithubRepository,
+  CreateProjectDto, UpdateProjectDto, CreateNoteDto, UpdateNoteDto, CreateMediaDto,
+  ProjectFilters, NoteFilters, SearchParams, PaginationParams,
+  ApiResponse
+};
+
+export {
+  NoteType, ProjectStatus, ProjectVisibility, TargetType, MediaType
+};
 
 // =============================================================================
 // Authentication API Types
@@ -78,7 +80,7 @@ export interface GetProjectsResponse {
 }
 
 export interface GetProjectRequest {
-  id: string;
+  id: number;
   include_notes?: boolean;
   include_media?: boolean;
   include_github?: boolean;
@@ -95,7 +97,7 @@ export interface CreateProjectResponse {
 }
 
 export interface UpdateProjectRequest extends UpdateProjectDto {
-  id: string;
+  id: number;
 }
 
 export interface UpdateProjectResponse {
@@ -103,12 +105,12 @@ export interface UpdateProjectResponse {
 }
 
 export interface DeleteProjectRequest {
-  id: string;
+  id: number;
 }
 
 export interface DeleteProjectResponse {
   deleted: boolean;
-  id: string;
+  id: number;
 }
 
 // =============================================================================
@@ -116,7 +118,7 @@ export interface DeleteProjectResponse {
 // =============================================================================
 
 export interface GetNotesRequest extends NoteFilters {
-  project_id: string;
+  project_id: number;
 }
 
 export interface GetNotesResponse {
@@ -130,7 +132,7 @@ export interface GetNotesResponse {
 }
 
 export interface GetNoteRequest {
-  id: string;
+  id: number;
   include_media?: boolean;
   include_project?: boolean;
 }
@@ -140,7 +142,7 @@ export interface GetNoteResponse {
 }
 
 export interface CreateNoteRequest extends CreateNoteDto {
-  project_id: string;
+  project_id: number;
 }
 
 export interface CreateNoteResponse {
@@ -148,8 +150,7 @@ export interface CreateNoteResponse {
 }
 
 export interface UpdateNoteRequest extends UpdateNoteDto {
-  id: string;
-  is_archived?: boolean;
+  id: number;
 }
 
 export interface UpdateNoteResponse {
@@ -157,12 +158,12 @@ export interface UpdateNoteResponse {
 }
 
 export interface DeleteNoteRequest {
-  id: string;
+  id: number;
 }
 
 export interface DeleteNoteResponse {
   deleted: boolean;
-  id: string;
+  id: number;
 }
 
 // =============================================================================
@@ -179,7 +180,7 @@ export interface UploadMediaResponse {
 }
 
 export interface GetMediaRequest {
-  id: string;
+  id: number;
 }
 
 export interface GetMediaResponse {
@@ -188,12 +189,12 @@ export interface GetMediaResponse {
 }
 
 export interface DeleteMediaRequest {
-  id: string;
+  id: number;
 }
 
 export interface DeleteMediaResponse {
   deleted: boolean;
-  id: string;
+  id: number;
 }
 
 // =============================================================================
@@ -259,7 +260,7 @@ export interface AutocompleteResponse {
 // =============================================================================
 
 export interface SyncGithubRepositoryRequest {
-  project_id: string;
+  project_id: number;
   github_url: string;
   auto_sync?: boolean;
 }
@@ -270,7 +271,7 @@ export interface SyncGithubRepositoryResponse {
 }
 
 export interface GetGithubRepositoryRequest {
-  project_id: string;
+  project_id: number;
 }
 
 export interface GetGithubRepositoryResponse {
@@ -285,7 +286,7 @@ export interface GetGithubRepositoryResponse {
 // =============================================================================
 
 export interface GetAnalyticsRequest {
-  project_id?: string;
+  project_id?: number;
   date_from?: string;
   date_to?: string;
   metrics?: ('views' | 'likes' | 'shares' | 'downloads')[];

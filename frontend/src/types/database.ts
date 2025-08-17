@@ -54,7 +54,7 @@ export enum TargetType {
  * User - 전역 사용자
  */
 export interface User {
-  id: string; // UUID
+  id: number; // Primary Key
   email: string; // Unique
   name: string;
   bio?: string;
@@ -70,8 +70,8 @@ export interface User {
  * AuthAccount - 소셜 로그인 연동 (GitHub/Google)
  */
 export interface AuthAccount {
-  id: string; // UUID
-  user_id: string; // FK to User
+  id: number; // Primary Key
+  user_id: number; // FK to User
   provider: AuthProvider;
   provider_account_id: string;
   access_token?: string;
@@ -88,8 +88,8 @@ export interface AuthAccount {
  * Session - 세션/토큰 관리
  */
 export interface Session {
-  id: string; // UUID
-  user_id: string; // FK to User
+  id: number; // Primary Key
+  user_id: number; // FK to User
   session_token: string; // Unique
   expires: Date;
   ip_address?: string;
@@ -102,8 +102,8 @@ export interface Session {
  * Project - 포트폴리오 프로젝트 메타데이터
  */
 export interface Project {
-  id: string; // UUID
-  owner_id: string; // FK to User
+  id: number; // Primary Key
+  owner_id: number; // FK to User
   slug: string; // URL-friendly identifier
   title: string;
   description?: string;
@@ -124,8 +124,8 @@ export interface Project {
  * GithubRepository - GitHub 저장소 정보 (1:1, 3NF 준수)
  */
 export interface GithubRepository {
-  id: string; // UUID
-  project_id: string; // FK to Project (Unique - 1:1 관계)
+  id: number; // Primary Key
+  project_id: number; // FK to Project (Unique - 1:1 관계)
   github_url: string;
   repository_name: string;
   stars: number;
@@ -142,8 +142,8 @@ export interface GithubRepository {
  * Note - 좌측 탭 기반 노트 (learn/change/research)
  */
 export interface Note {
-  id: string; // UUID
-  project_id: string; // FK to Project
+  id: number; // Primary Key
+  project_id: number; // FK to Project
   type: NoteType;
   title: string;
   content: Record<string, unknown>; // JSONB - 유연한 콘텐츠 구조
@@ -158,9 +158,9 @@ export interface Note {
  * Media - 첨부 미디어 (project/note 연결)
  */
 export interface Media {
-  id: string; // UUID
+  id: number; // Primary Key
   target_type: TargetType; // project | note
-  target_id: string; // FK to Project or Note
+  target_id: number; // FK to Project or Note
   original_name: string;
   file_path: string;
   file_size: number; // bytes
@@ -276,7 +276,7 @@ export type UpdateProjectDto = Partial<CreateProjectDto>;
  * Note 생성/수정 DTO
  */
 export interface CreateNoteDto {
-  project_id: string;
+  project_id: number;
   type: NoteType;
   title: string;
   content?: Record<string, unknown>;
@@ -284,14 +284,16 @@ export interface CreateNoteDto {
   is_pinned?: boolean;
 }
 
-export type UpdateNoteDto = Partial<Omit<CreateNoteDto, 'project_id'>>;
+export type UpdateNoteDto = Partial<Omit<CreateNoteDto, 'project_id'>> & {
+  is_archived?: boolean;
+};
 
 /**
  * Media 업로드 DTO
  */
 export interface CreateMediaDto {
   target_type: TargetType;
-  target_id: string;
+  target_id: number;
   original_name: string;
   file_size: number;
   mime_type: string;
@@ -326,7 +328,7 @@ export interface ProjectFilters extends PaginationParams, Record<string, unknown
   tech_stack?: string[];
   categories?: string[];
   tags?: string[];
-  owner_id?: string;
+  owner_id?: number;
   search?: string;
 }
 
@@ -334,7 +336,7 @@ export interface ProjectFilters extends PaginationParams, Record<string, unknown
  * Note 필터링 파라미터
  */
 export interface NoteFilters extends PaginationParams, Record<string, unknown> {
-  project_id?: string;
+  project_id?: number;
   type?: NoteType;
   tags?: string[];
   is_pinned?: boolean;
@@ -366,10 +368,10 @@ export interface Timestamps {
 }
 
 /**
- * UUID 기본키
+ * Integer 기본키
  */
 export interface WithId {
-  id: string;
+  id: number;
 }
 
 /**

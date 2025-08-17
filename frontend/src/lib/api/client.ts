@@ -32,7 +32,17 @@ export class ApiClient {
     const url = `${this.baseUrl}${endpoint}`;
     
     // 자동으로 토큰 추가
-    const headers = { ...this.defaultHeaders, ...options.headers };
+    const headers: Record<string, string> = {};
+    
+    // Copy default headers
+    Object.assign(headers, this.defaultHeaders);
+    
+    // Copy request headers if they exist
+    if (options.headers) {
+      Object.assign(headers, options.headers);
+    }
+    
+    // Add authorization token
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('access_token');
       if (token) {
