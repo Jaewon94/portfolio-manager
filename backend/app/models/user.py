@@ -37,6 +37,9 @@ class User(Base, TimestampMixin):
         String(50), unique=True, index=True, nullable=False
     )  # 사용자명/닉네임
     name: Mapped[str] = mapped_column(String(100), nullable=False)  # 실제 이름
+    hashed_password: Mapped[Optional[str]] = mapped_column(
+        Text, nullable=True
+    )  # 해시된 비밀번호
 
     # ERD 추가 필드들
     avatar_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)

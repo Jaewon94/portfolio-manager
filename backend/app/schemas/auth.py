@@ -17,6 +17,14 @@ class LoginRequest(BaseModel):
     password: str = Field(..., min_length=6, max_length=128)
 
 
+class RegisterRequest(BaseModel):
+    """회원가입 요청"""
+
+    name: str = Field(..., min_length=1, max_length=100, description="사용자 이름")
+    email: EmailStr = Field(..., description="이메일 주소")
+    password: str = Field(..., min_length=6, max_length=128, description="비밀번호")
+
+
 class RefreshTokenRequest(BaseModel):
     """Refresh token 요청"""
 

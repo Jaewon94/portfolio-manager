@@ -24,6 +24,8 @@ from sqlalchemy.orm import sessionmaker
 os.environ["ENVIRONMENT"] = "test"
 load_dotenv(".env.test")
 
+from alembic import command
+from alembic.config import Config
 from app.core.config import settings
 from app.core.database import Base, get_db
 from app.main import app
@@ -72,6 +74,16 @@ async def setup_test_database() -> AsyncGenerator[None, None]:
     finally:
         await admin_engine.dispose()
 
+    # 테스트 데이터베이스에 마이그레이션 적용
+    alembic_cfg = Config("alembic.ini")
+    alembic_cfg.set_main_option("sqlalchemy.url", settings.TEST_DATABASE_URL)
+
+    try:
+        command.upgrade(alembic_cfg, "head")
+        print("테스트 데이터베이스에 마이그레이션 적용 완료")
+    except Exception as e:
+        print(f"마이그레이션 적용 중 오류: {e}")
+
     yield
 
 
@@ -90,10 +102,6 @@ async def test_db(setup_test_database):
         pool_size=1,
         max_overflow=0,
     )
-
-    # 테이블 생성
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
 
     # 세션 생성
     async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
