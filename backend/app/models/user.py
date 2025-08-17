@@ -1,17 +1,22 @@
-from sqlalchemy import String, Boolean, Text, Enum as SQLEnum
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from .base import Base, TimestampMixin
-from typing import Optional, TYPE_CHECKING
 import enum
+from typing import TYPE_CHECKING, Optional
+
+from sqlalchemy import Boolean
+from sqlalchemy import Enum as SQLEnum
+from sqlalchemy import String, Text
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from .base import Base, TimestampMixin
 
 if TYPE_CHECKING:
-    from .project import Project
     from .auth_account import AuthAccount
+    from .project import Project
     from .session import Session
 
 
 class UserRole(enum.Enum):
     """사용자 역할"""
+
     USER = "user"
     ADMIN = "admin"
 
@@ -28,15 +33,18 @@ class User(Base, TimestampMixin):
     email: Mapped[str] = mapped_column(
         String(255), unique=True, index=True, nullable=False
     )
-    name: Mapped[str] = mapped_column(String(100), nullable=False)  # ERD에서 NOT NULL
-    
+    username: Mapped[str] = mapped_column(
+        String(50), unique=True, index=True, nullable=False
+    )  # 사용자명/닉네임
+    name: Mapped[str] = mapped_column(String(100), nullable=False)  # 실제 이름
+
     # ERD 추가 필드들
     avatar_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     bio: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     website_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     github_username: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     linkedin_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    
+
     # 사용자 상태
     role: Mapped[UserRole] = mapped_column(
         SQLEnum(UserRole), default=UserRole.USER, nullable=False

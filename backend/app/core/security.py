@@ -68,7 +68,7 @@ def create_refresh_token(
     return encoded_jwt
 
 
-def verify_token(token: str, token_type: str = "access") -> Optional[str]:
+def verify_token(token: str, token_type: str = "access") -> Optional[int]:
     """
     토큰 검증 및 주제 추출
 
@@ -94,11 +94,20 @@ def verify_token(token: str, token_type: str = "access") -> Optional[str]:
                 detail=f"Invalid token type. Expected {token_type}",
             )
 
-        user_id: str = payload.get("sub")
-        if user_id is None:
+        user_id_str: str = payload.get("sub")
+        if user_id_str is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token payload invalid",
+            )
+
+        # str을 int로 변환
+        try:
+            user_id = int(user_id_str)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid user ID format in token",
             )
 
         return user_id

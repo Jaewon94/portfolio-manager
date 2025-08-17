@@ -1,6 +1,7 @@
-from pydantic_settings import BaseSettings
-from typing import List
 import os
+from typing import List
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -22,13 +23,20 @@ class Settings(BaseSettings):
     ALLOWED_HOSTS: str = "http://localhost:3000,http://localhost:8000"
 
     # 데이터베이스 설정 (.env의 DATABASE_URL 값으로 자동 치환)
-    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/portfolio_manager"
-    
+    DATABASE_URL: str = (
+        "postgresql+asyncpg://postgres:postgres@localhost:5432/portfolio_manager"
+    )
+    TEST_DATABASE_URL: str = (
+        "postgresql+asyncpg://postgres:postgres@localhost:5433/portfolio_manager_test"
+    )
+
     @property
     def SYNC_DATABASE_URL(self) -> str:
         """Alembic용 동기 데이터베이스 URL"""
-        return self.DATABASE_URL.replace("postgresql+asyncpg://", "postgresql+psycopg2://")
-    
+        return self.DATABASE_URL.replace(
+            "postgresql+asyncpg://", "postgresql+psycopg2://"
+        )
+
     @property
     def is_production(self) -> bool:
         """프로덕션 환경 여부"""
@@ -57,19 +65,25 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     LOG_LEVEL: str = "INFO"
 
+    # 미디어 설정 (.env의 MEDIA_ROOT 값으로 자동 치환)
+    MEDIA_ROOT: str = "./media"
+    MEDIA_URL: str = "/media"
+    MAX_UPLOAD_SIZE: int = 50 * 1024 * 1024  # 50MB
+
     @property
     def allowed_hosts_list(self) -> List[str]:
         """CORS용 호스트 리스트 반환"""
         return [host.strip() for host in self.ALLOWED_HOSTS.split(",")]
 
-    class Config:
+    model_config = SettingsConfigDict(
         # 환경에 따른 .env 파일 선택
-        env_file = (
+        env_file=(
             ".env.dev"
             if os.getenv("ENVIRONMENT", "development") == "development"
-            else ".env.prod"
-        )
-        env_file_encoding = "utf-8"
+            else ".env.test" if os.getenv("ENVIRONMENT") == "test" else ".env.prod"
+        ),
+        env_file_encoding="utf-8",
+    )
 
 
 settings = Settings()

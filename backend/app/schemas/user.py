@@ -1,5 +1,6 @@
 from typing import Optional
-from pydantic import BaseModel, EmailStr
+
+from pydantic import BaseModel, ConfigDict, EmailStr
 
 
 class UserBase(BaseModel):
@@ -34,8 +35,7 @@ class UserInDB(UserBase):
     hashed_password: str
     is_superuser: bool = False
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class User(UserBase):
@@ -44,5 +44,4 @@ class User(UserBase):
     id: int
     is_superuser: bool = False
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

@@ -403,7 +403,7 @@ class AuthService:
     
     async def create_user_session(
         self, 
-        user_id: str, 
+        user_id: int, 
         access_token: str, 
         ip_address: str,
         user_agent: str
@@ -434,7 +434,7 @@ class AuthService:
         await self.db.refresh(session)
         return session
     
-    async def invalidate_user_sessions(self, user_id: str) -> None:
+    async def invalidate_user_sessions(self, user_id: int) -> None:
         """
         사용자의 모든 세션 무효화
         
@@ -445,11 +445,17 @@ class AuthService:
         await self.db.execute(stmt)
         await self.db.commit()
     
-    async def get_user_by_id(self, user_id: str) -> Optional[User]:
+    async def get_user_by_id(self, user_id: int) -> Optional[User]:
         """사용자 ID로 조회"""
-        stmt = select(User).where(User.id == user_id)
-        result = await self.db.execute(stmt)
-        return result.scalar_one_or_none()
+        try:
+            # 문자열 user_id를 정수로 변환 (User 모델의 id는 integer)
+            user_id_int = int(user_id)
+            stmt = select(User).where(User.id == user_id_int)
+            result = await self.db.execute(stmt)
+            return result.scalar_one_or_none()
+        except ValueError:
+            # user_id가 정수로 변환할 수 없는 경우
+            return None
     
     async def get_user_by_email(self, email: str) -> Optional[User]:
         """이메일로 사용자 조회"""
@@ -516,21 +522,26 @@ async def get_current_user_optional(
         Optional[User]: 인증된 사용자 또는 None
     """
     if not authorization:
+        print("DEBUG: No authorization header provided")
         return None
     
     try:
         # Bearer 토큰에서 실제 토큰 추출
         token = authorization.credentials
+        print(f"DEBUG: Received token: {token[:50] if token else 'None'}...")
         
         # 토큰 검증 및 사용자 ID 추출
         user_id = verify_token(token, token_type="access")
+        print(f"DEBUG: Token verified, user_id: {user_id}")
         
         # 사용자 조회
         auth_service = AuthService(db)
         user = await auth_service.get_user_by_id(user_id)
+        print(f"DEBUG: User found: {user.email if user else 'None'}")
         
         return user
         
-    except Exception:
+    except Exception as e:
+        print(f"DEBUG: Authentication error: {e}")
         # 인증 오류 시 None 반환 (오류 발생시키지 않음)
         return None

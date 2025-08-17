@@ -1,7 +1,8 @@
-from typing import Optional, Dict, List, Any
 from datetime import datetime
-from pydantic import BaseModel, Field
+from typing import Any, Dict, List, Optional
+
 from app.models.project import ProjectStatus, ProjectVisibility
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ProjectBase(BaseModel):
@@ -10,12 +11,18 @@ class ProjectBase(BaseModel):
     slug: str = Field(..., max_length=100, description="URL friendly identifier")
     title: str = Field(..., max_length=200, description="프로젝트 제목")
     description: Optional[str] = Field(None, description="프로젝트 설명")
-    content: Optional[Dict[str, Any]] = Field(None, description="프로젝트 상세 내용 (JSONB)")
+    content: Optional[Dict[str, Any]] = Field(
+        None, description="프로젝트 상세 내용 (JSONB)"
+    )
     tech_stack: List[str] = Field(default=[], description="기술 스택 배열")
     categories: List[str] = Field(default=[], description="카테고리 배열")
     tags: List[str] = Field(default=[], description="태그 배열")
-    status: ProjectStatus = Field(default=ProjectStatus.DRAFT, description="프로젝트 상태")
-    visibility: ProjectVisibility = Field(default=ProjectVisibility.PRIVATE, description="공개 설정")
+    status: ProjectStatus = Field(
+        default=ProjectStatus.DRAFT, description="프로젝트 상태"
+    )
+    visibility: ProjectVisibility = Field(
+        default=ProjectVisibility.PRIVATE, description="공개 설정"
+    )
     featured: bool = Field(default=False, description="추천 프로젝트 여부")
 
 
@@ -51,8 +58,7 @@ class ProjectInDB(ProjectBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class Project(ProjectBase):
@@ -66,5 +72,4 @@ class Project(ProjectBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
