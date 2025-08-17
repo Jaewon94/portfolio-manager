@@ -124,6 +124,7 @@ async def test_user(test_db: AsyncSession) -> User:
     """테스트용 사용자 생성"""
     user = User(
         email="test@example.com",
+        username="testuser",
         name="Test User",
         github_username="testuser",
         role=UserRole.USER,
@@ -140,6 +141,7 @@ async def admin_user(test_db: AsyncSession) -> User:
     """테스트용 관리자 사용자 생성"""
     user = User(
         email="admin@example.com",
+        username="adminuser",
         name="Admin User",
         github_username="adminuser",
         role=UserRole.ADMIN,

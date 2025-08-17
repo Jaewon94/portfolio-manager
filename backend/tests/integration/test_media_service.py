@@ -175,6 +175,7 @@ class TestMediaServiceIntegration:
         # 다른 사용자 생성
         other_user = User(
             email="other@example.com",
+            username="otheruser",
             name="Other User",
             github_username="otheruser",
             is_verified=True,

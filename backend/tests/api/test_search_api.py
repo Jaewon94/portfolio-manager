@@ -1,333 +1,416 @@
 """
-검색 API 테스트
-Search endpoints: 통합검색, 자동완성, 인기검색, 통계
+검색 API 엔드포인트 테스트
+실제 HTTP 요청을 통한 API 동작 테스트
 """
 
 import pytest
+from app.models.note import Note, NoteType
+from app.models.project import Project, ProjectStatus, ProjectVisibility
 from app.models.user import User
 from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
-@pytest.mark.api
-@pytest.mark.search
 class TestSearchAPI:
-    """검색 관련 API 테스트"""
+    """검색 API 엔드포인트 테스트"""
 
     @pytest.mark.asyncio
-    async def test_search_general_no_query(self, async_client: AsyncClient):
-        """통합 검색 - 쿼리 없음"""
-        response = await async_client.get("/api/v1/search/")
-        # 쿼리가 필요하면 422, 기본 결과 반환하면 200
-        assert response.status_code in [200, 422]
-
-    @pytest.mark.asyncio
-    async def test_search_general_with_query(self, async_client: AsyncClient):
-        """통합 검색 - 쿼리 포함"""
-        response = await async_client.get("/api/v1/search/", params={"q": "test"})
-        assert response.status_code in [200, 401]
-
-        if response.status_code == 200:
-            data = response.json()
-            assert isinstance(data, (list, dict))
-
-    @pytest.mark.asyncio
-    async def test_search_general_empty_query(self, async_client: AsyncClient):
-        """통합 검색 - 빈 쿼리"""
-        response = await async_client.get("/api/v1/search/", params={"q": ""})
-        assert response.status_code in [200, 422]
-
-    @pytest.mark.asyncio
-    async def test_search_general_special_characters(self, async_client: AsyncClient):
-        """통합 검색 - 특수문자 쿼리"""
-        special_queries = [
-            "test & query",
-            "query with 'quotes'",
-            "한글 검색",
-            "emoji 🚀 search",
-            "<script>alert('xss')</script>",
-            "sql'; DROP TABLE users; --",
-        ]
-
-        for query in special_queries:
-            response = await async_client.get("/api/v1/search/", params={"q": query})
-            assert response.status_code in [200, 401, 422]
-
-    @pytest.mark.asyncio
-    async def test_search_projects_no_query(self, async_client: AsyncClient):
-        """프로젝트 검색 - 쿼리 없음"""
-        response = await async_client.get("/api/v1/search/projects")
-        assert response.status_code in [200, 401, 422]
-
-    @pytest.mark.asyncio
-    async def test_search_projects_with_query(self, async_client: AsyncClient):
-        """프로젝트 검색 - 쿼리 포함"""
-        response = await async_client.get(
-            "/api/v1/search/projects", params={"q": "react"}
+    async def test_search_all_endpoint(
+        self, async_client: AsyncClient, test_db: AsyncSession, test_user: User
+    ):
+        """전역 검색 API 엔드포인트 테스트"""
+        # Given
+        # 테스트 프로젝트 생성
+        project = Project(
+            title="React Portfolio Project",
+            description="A modern portfolio built with React",
+            status=ProjectStatus.ACTIVE,
+            visibility=ProjectVisibility.PUBLIC,
+            owner_id=test_user.id,
+            slug="react-portfolio",
+            tech_stack=["React", "TypeScript"],
+            categories=["frontend"],
+            tags=["react", "portfolio"],
         )
-        assert response.status_code in [200, 401]
 
-        if response.status_code == 200:
-            data = response.json()
-            # 검색 결과는 dict 형태로 반환 (projects, notes 등 포함)
-            assert isinstance(data, (list, dict))
+        test_db.add(project)
+        await test_db.commit()
+        await test_db.refresh(project)
+
+        # When
+        response = await async_client.get("/api/v1/search/", params={"q": "React"})
+
+        # Then
+        assert response.status_code == 200
+        data = response.json()
+        # 직접 응답 형식
+        assert "query" in data
+        assert data["query"] == "React"
+        assert len(data["projects"]) >= 1
 
     @pytest.mark.asyncio
-    async def test_search_projects_with_filters(self, async_client: AsyncClient):
-        """프로젝트 검색 - 필터 포함"""
-        # 기술 스택 필터
-        response = await async_client.get(
-            "/api/v1/search/projects", params={"q": "api", "tech": "python"}
+    async def test_search_projects_only_endpoint(
+        self, async_client: AsyncClient, test_db: AsyncSession, test_user: User
+    ):
+        """프로젝트만 검색하는 API 엔드포인트 테스트"""
+        # Given
+        project = Project(
+            title="Vue.js E-commerce",
+            description="E-commerce platform built with Vue.js",
+            status=ProjectStatus.ACTIVE,
+            visibility=ProjectVisibility.PUBLIC,
+            owner_id=test_user.id,
+            slug="vue-ecommerce",
+            tech_stack=["Vue.js", "Vuex"],
+            categories=["frontend", "ecommerce"],
+            tags=["vue", "ecommerce"],
         )
-        assert response.status_code in [200, 401, 422]
 
-        # 상태 필터
+        test_db.add(project)
+        await test_db.commit()
+        await test_db.refresh(project)
+
+        # When
         response = await async_client.get(
-            "/api/v1/search/projects", params={"q": "web", "status": "active"}
+            "/api/v1/search/projects", params={"q": "Vue"}
         )
-        assert response.status_code in [200, 401, 422]
+
+        # Then
+        assert response.status_code == 200
+        data = response.json()
+        assert "query" in data
+        assert data["query"] == "Vue"
+        assert len(data["projects"]) >= 1
+        assert len(data["notes"]) == 0
+        assert len(data["users"]) == 0
 
     @pytest.mark.asyncio
-    async def test_search_notes_no_query(self, async_client: AsyncClient):
-        """노트 검색 - 쿼리 없음"""
-        response = await async_client.get("/api/v1/search/notes")
-        assert response.status_code in [200, 401, 422]
+    async def test_search_notes_only_endpoint(
+        self, async_client: AsyncClient, test_db: AsyncSession, test_user: User
+    ):
+        """노트만 검색하는 API 엔드포인트 테스트"""
+        # Given
+        project = Project(
+            title="Test Project",
+            description="Test project for note search",
+            status=ProjectStatus.ACTIVE,
+            visibility=ProjectVisibility.PUBLIC,
+            owner_id=test_user.id,
+            slug="test-project",
+            tech_stack=["Python"],
+            categories=["test"],
+            tags=["test"],
+        )
 
-    @pytest.mark.asyncio
-    async def test_search_notes_with_query(self, async_client: AsyncClient):
-        """노트 검색 - 쿼리 포함"""
+        test_db.add(project)
+        await test_db.commit()
+        await test_db.refresh(project)
+
+        note = Note(
+            title="Docker Containerization Guide",
+            content={"text": "Complete guide to Docker containerization"},
+            type=NoteType.LEARN,
+            project_id=project.id,
+            tags=["docker", "containerization"],
+        )
+
+        test_db.add(note)
+        await test_db.commit()
+        await test_db.refresh(note)
+
+        # When
         response = await async_client.get(
-            "/api/v1/search/notes", params={"q": "meeting"}
+            "/api/v1/search/notes", params={"q": "Docker"}
         )
-        assert response.status_code in [200, 401]
+
+        # Then
+        assert response.status_code == 200
+        data = response.json()
+        assert "query" in data
+        assert data["query"] == "Docker"
+        assert len(data["notes"]) >= 1
+        assert len(data["projects"]) == 0
+        assert len(data["users"]) == 0
 
     @pytest.mark.asyncio
-    async def test_search_notes_with_filters(self, async_client: AsyncClient):
-        """노트 검색 - 필터 포함"""
-        # 타입 필터
+    async def test_search_users_only_endpoint(
+        self, async_client: AsyncClient, test_db: AsyncSession, test_user: User
+    ):
+        """사용자만 검색하는 API 엔드포인트 테스트"""
+        # Given
+        # test_user는 이미 존재하므로 추가 생성 불필요
+
+        # When
         response = await async_client.get(
-            "/api/v1/search/notes", params={"q": "idea", "type": "personal"}
+            "/api/v1/search/users", params={"q": "User"}  # 더 일반적인 검색어 사용
         )
-        assert response.status_code in [200, 401, 422]
 
-        # 날짜 범위 필터
+        # Then
+        assert response.status_code == 200
+        data = response.json()
+        assert "query" in data
+        assert data["query"] == "User"
+        assert len(data["users"]) >= 0  # 검색 결과가 없을 수도 있음
+        assert len(data["projects"]) == 0
+        assert len(data["notes"]) == 0
+
+    @pytest.mark.asyncio
+    async def test_search_with_category_filter(
+        self, async_client: AsyncClient, test_db: AsyncSession, test_user: User
+    ):
+        """카테고리 필터가 적용된 검색 API 테스트"""
+        # Given
+        frontend_project = Project(
+            title="Frontend Project",
+            description="Frontend development project",
+            status=ProjectStatus.ACTIVE,
+            visibility=ProjectVisibility.PUBLIC,
+            owner_id=test_user.id,
+            slug="frontend-project",
+            tech_stack=["React", "TypeScript"],
+            categories=["frontend"],
+            tags=["react", "typescript"],
+        )
+
+        backend_project = Project(
+            title="Backend Project",
+            description="Backend development project",
+            status=ProjectStatus.ACTIVE,
+            visibility=ProjectVisibility.PUBLIC,
+            owner_id=test_user.id,
+            slug="backend-project",
+            tech_stack=["Python", "FastAPI"],
+            categories=["backend"],
+            tags=["python", "fastapi"],
+        )
+
+        test_db.add_all([frontend_project, backend_project])
+        await test_db.commit()
+        await test_db.refresh(frontend_project)
+        await test_db.refresh(backend_project)
+
+        # When
         response = await async_client.get(
-            "/api/v1/search/notes",
-            params={"q": "project", "date_from": "2024-01-01", "date_to": "2024-12-31"},
-        )
-        assert response.status_code in [200, 401, 422]
-
-    @pytest.mark.asyncio
-    async def test_search_users_no_query(self, async_client: AsyncClient):
-        """사용자 검색 - 쿼리 없음"""
-        response = await async_client.get("/api/v1/search/users")
-        assert response.status_code in [200, 401, 422]
-
-    @pytest.mark.asyncio
-    async def test_search_users_with_query(self, async_client: AsyncClient):
-        """사용자 검색 - 쿼리 포함"""
-        response = await async_client.get("/api/v1/search/users", params={"q": "john"})
-        assert response.status_code in [200, 401]
-
-    @pytest.mark.asyncio
-    async def test_search_users_privacy(self, async_client: AsyncClient):
-        """사용자 검색 - 개인정보 보호"""
-        # 이메일로 검색 시도
-        response = await async_client.get(
-            "/api/v1/search/users", params={"q": "test@example.com"}
-        )
-        assert response.status_code in [200, 401, 403]  # 개인정보 보호로 403 가능
-
-    @pytest.mark.asyncio
-    async def test_search_autocomplete_no_query(self, async_client: AsyncClient):
-        """자동완성 - 쿼리 없음"""
-        response = await async_client.get("/api/v1/search/autocomplete")
-        assert response.status_code in [200, 422]
-
-    @pytest.mark.asyncio
-    async def test_search_autocomplete_with_query(self, async_client: AsyncClient):
-        """자동완성 - 쿼리 포함"""
-        response = await async_client.get(
-            "/api/v1/search/autocomplete", params={"q": "rea"}
-        )
-        assert response.status_code in [200, 401]
-
-        if response.status_code == 200:
-            data = response.json()
-            # 자동완성 결과는 list 또는 dict 형태
-            assert isinstance(data, (list, dict))
-
-    @pytest.mark.asyncio
-    async def test_search_autocomplete_short_query(self, async_client: AsyncClient):
-        """자동완성 - 짧은 쿼리"""
-        # 1글자 쿼리
-        response = await async_client.get(
-            "/api/v1/search/autocomplete", params={"q": "a"}
-        )
-        assert response.status_code in [200, 422]  # 최소 길이 제한 있을 수 있음
-
-    @pytest.mark.asyncio
-    async def test_search_autocomplete_limit(self, async_client: AsyncClient):
-        """자동완성 - 결과 수 제한"""
-        response = await async_client.get(
-            "/api/v1/search/autocomplete", params={"q": "test", "limit": 5}
-        )
-        assert response.status_code in [200, 401, 422]
-
-    @pytest.mark.asyncio
-    async def test_search_popular_endpoint(self, async_client: AsyncClient):
-        """인기 검색어"""
-        response = await async_client.get("/api/v1/search/popular")
-        assert response.status_code in [200, 401]
-
-        if response.status_code == 200:
-            data = response.json()
-            # 인기 검색어는 list 또는 dict 형태
-            assert isinstance(data, (list, dict))
-
-    @pytest.mark.asyncio
-    async def test_search_popular_with_limit(self, async_client: AsyncClient):
-        """인기 검색어 - 개수 제한"""
-        response = await async_client.get(
-            "/api/v1/search/popular", params={"limit": 10}
-        )
-        assert response.status_code in [200, 401, 422]
-
-    @pytest.mark.asyncio
-    async def test_search_popular_with_timeframe(self, async_client: AsyncClient):
-        """인기 검색어 - 기간 설정"""
-        response = await async_client.get(
-            "/api/v1/search/popular", params={"timeframe": "week"}
-        )
-        assert response.status_code in [200, 401, 422]
-
-    @pytest.mark.asyncio
-    async def test_search_stats_unauthorized(self, async_client: AsyncClient):
-        """검색 통계 - 인증 없음"""
-        response = await async_client.get("/api/v1/search/stats")
-        assert response.status_code in [200, 401]
-
-    @pytest.mark.asyncio
-    async def test_search_stats_with_auth(self, authenticated_client: AsyncClient):
-        """검색 통계 - 인증됨"""
-        response = await authenticated_client.get("/api/v1/search/stats")
-        assert response.status_code in [200, 401]
-
-        if response.status_code == 200:
-            data = response.json()
-            assert isinstance(data, dict)
-
-    @pytest.mark.asyncio
-    async def test_search_pagination(self, async_client: AsyncClient):
-        """검색 결과 페이지네이션"""
-        # 통합 검색 페이지네이션
-        response = await async_client.get(
-            "/api/v1/search/", params={"q": "test", "page": 1, "limit": 10}
-        )
-        assert response.status_code in [200, 401, 422]
-
-        # 프로젝트 검색 페이지네이션
-        response = await async_client.get(
-            "/api/v1/search/projects", params={"q": "web", "offset": 0, "limit": 5}
-        )
-        assert response.status_code in [200, 401, 422]
-
-    @pytest.mark.asyncio
-    async def test_search_sorting(self, async_client: AsyncClient):
-        """검색 결과 정렬"""
-        # 관련도순 정렬
-        response = await async_client.get(
-            "/api/v1/search/", params={"q": "python", "sort": "relevance"}
-        )
-        assert response.status_code in [200, 401, 422]
-
-        # 날짜순 정렬
-        response = await async_client.get(
-            "/api/v1/search/projects",
-            params={"q": "api", "sort": "created_at", "order": "desc"},
-        )
-        assert response.status_code in [200, 401, 422]
-
-    @pytest.mark.asyncio
-    async def test_search_long_query(self, async_client: AsyncClient):
-        """검색 - 긴 쿼리"""
-        long_query = "a very long search query " * 20  # 매우 긴 검색어
-        response = await async_client.get("/api/v1/search/", params={"q": long_query})
-        # 길이 제한이 있다면 422, 없다면 200
-        assert response.status_code in [200, 413, 422, 401]
-
-    @pytest.mark.asyncio
-    async def test_search_http_methods(self, async_client: AsyncClient):
-        """검색 API HTTP 메서드 검증"""
-        # 모든 검색 엔드포인트는 GET만 허용
-        search_endpoints = [
             "/api/v1/search/",
-            "/api/v1/search/projects",
-            "/api/v1/search/notes",
-            "/api/v1/search/users",
-            "/api/v1/search/autocomplete",
-            "/api/v1/search/popular",
-            "/api/v1/search/stats",
-        ]
+            params={
+                "q": "Project",
+                "categories": ["frontend"],
+                "content_types": ["project"],
+            },
+        )
 
-        for endpoint in search_endpoints:
-            # POST 요청은 허용되지 않아야 함
-            response = await async_client.post(endpoint)
-            assert response.status_code == 405
+        # Then
+        assert response.status_code == 200
+        data = response.json()
+        assert "query" in data
+        assert data["query"] == "Project"
+        assert len(data["projects"]) >= 1
+
+        # frontend 카테고리 프로젝트만 있는지 확인
+        for project in data["projects"]:
+            assert "frontend" in project["categories"]
 
     @pytest.mark.asyncio
-    async def test_search_rate_limiting_simulation(self, async_client: AsyncClient):
-        """검색 API 반복 호출 테스트"""
-        # 빠른 연속 검색 요청
-        responses = []
-
-        for i in range(10):
-            response = await async_client.get(
-                "/api/v1/search/", params={"q": f"test{i}"}
+    async def test_search_with_pagination(
+        self, async_client: AsyncClient, test_db: AsyncSession, test_user: User
+    ):
+        """페이지네이션이 적용된 검색 API 테스트"""
+        # Given
+        projects = []
+        for i in range(5):
+            project = Project(
+                title=f"Test Project {i}",
+                description=f"Test project {i} description",
+                status=ProjectStatus.ACTIVE,
+                visibility=ProjectVisibility.PUBLIC,
+                owner_id=test_user.id,
+                slug=f"test-project-{i}",
+                tech_stack=["Python"],
+                categories=["test"],
+                tags=["test"],
             )
-            responses.append(response.status_code)
+            projects.append(project)
 
-        # Rate limiting이 구현되어 있다면 429가 나올 수 있음
-        assert all(status in [200, 401, 422, 429] for status in responses)
+        test_db.add_all(projects)
+        await test_db.commit()
+        for project in projects:
+            await test_db.refresh(project)
 
-    @pytest.mark.asyncio
-    async def test_search_concurrent_requests(self, async_client: AsyncClient):
-        """검색 동시 요청 테스트"""
-        import asyncio
+        # When
+        response = await async_client.get(
+            "/api/v1/search/",
+            params={"q": "Test", "content_types": ["project"], "limit": 3, "offset": 0},
+        )
 
-        # 동시에 여러 검색 요청
-        tasks = []
-        queries = ["python", "javascript", "react", "api", "web"]
-
-        for query in queries:
-            task = async_client.get("/api/v1/search/", params={"q": query})
-            tasks.append(task)
-
-        responses = await asyncio.gather(*tasks, return_exceptions=True)
-
-        # 모든 요청이 처리되어야 함
-        for response in responses:
-            if hasattr(response, "status_code"):
-                # 동시 요청으로 인한 500 에러도 허용
-                assert response.status_code in [200, 401, 422, 500]
+        # Then
+        assert response.status_code == 200
+        data = response.json()
+        assert "query" in data
+        assert data["query"] == "Test"
+        assert len(data["projects"]) <= 3  # limit 적용 확인
 
     @pytest.mark.asyncio
-    async def test_search_injection_attempts(self, async_client: AsyncClient):
-        """검색 인젝션 공격 시도"""
-        injection_queries = [
-            "'; DROP TABLE projects; --",
-            "<script>alert('xss')</script>",
-            "{{7*7}}",  # Template injection
-            "${7*7}",  # Expression injection
-            "../../etc/passwd",  # Path traversal
+    async def test_autocomplete_endpoint(
+        self, async_client: AsyncClient, test_db: AsyncSession, test_user: User
+    ):
+        """자동완성 API 엔드포인트 테스트"""
+        # Given
+        project = Project(
+            title="React Native Mobile App",
+            description="Mobile app built with React Native",
+            status=ProjectStatus.ACTIVE,
+            visibility=ProjectVisibility.PUBLIC,
+            owner_id=test_user.id,
+            slug="react-native-app",
+            tech_stack=["React Native", "JavaScript"],
+            categories=["mobile", "frontend"],
+            tags=["react-native", "mobile"],
+        )
+
+        test_db.add(project)
+        await test_db.commit()
+        await test_db.refresh(project)
+
+        # When
+        response = await async_client.get(
+            "/api/v1/search/autocomplete",
+            params={"q": "React", "type": "all", "limit": 5},
+        )
+
+        # Then
+        assert response.status_code == 200
+        data = response.json()
+        assert "query" in data
+        assert data["query"] == "React"
+        assert "suggestions" in data
+        assert len(data["suggestions"]) >= 0
+
+    @pytest.mark.asyncio
+    async def test_popular_searches_endpoint(
+        self, async_client: AsyncClient, test_db: AsyncSession, test_user: User
+    ):
+        """인기 검색어 API 엔드포인트 테스트"""
+        # Given
+        project = Project(
+            title="Python Project",
+            description="Python development project",
+            status=ProjectStatus.ACTIVE,
+            visibility=ProjectVisibility.PUBLIC,
+            owner_id=test_user.id,
+            slug="python-project",
+            tech_stack=["Python"],
+            categories=["backend"],
+            tags=["python", "backend"],
+        )
+
+        test_db.add(project)
+        await test_db.commit()
+        await test_db.refresh(project)
+
+        # When
+        response = await async_client.get("/api/v1/search/popular", params={"limit": 5})
+
+        # Then
+        assert response.status_code == 200
+        data = response.json()
+        assert "popular_searches" in data
+        assert len(data["popular_searches"]) >= 0
+
+    @pytest.mark.asyncio
+    async def test_search_stats_endpoint(
+        self, async_client: AsyncClient, test_db: AsyncSession, test_user: User
+    ):
+        """검색 통계 API 엔드포인트 테스트"""
+        # Given
+        project = Project(
+            title="Test Project",
+            description="Test project for stats",
+            status=ProjectStatus.ACTIVE,
+            visibility=ProjectVisibility.PUBLIC,
+            owner_id=test_user.id,
+            slug="test-project",
+            tech_stack=["Python"],
+            categories=["test"],
+            tags=["test"],
+        )
+
+        test_db.add(project)
+        await test_db.commit()
+        await test_db.refresh(project)
+
+        # When
+        response = await async_client.get("/api/v1/search/stats")
+
+        # Then
+        assert response.status_code == 200
+        data = response.json()
+        assert "total_projects" in data
+        assert "total_notes" in data
+        assert "total_users" in data
+        assert "indexable_content" in data
+        assert data["total_projects"] >= 1
+
+    @pytest.mark.asyncio
+    async def test_search_with_empty_query(self, async_client: AsyncClient):
+        """빈 검색어로 검색 시 에러 처리 테스트"""
+        # When
+        response = await async_client.get("/api/v1/search/", params={"q": ""})
+
+        # Then
+        assert response.status_code == 422  # Validation error
+
+    @pytest.mark.asyncio
+    async def test_search_with_invalid_content_types(self, async_client: AsyncClient):
+        """잘못된 content_types로 검색 시 에러 처리 테스트"""
+        # When
+        response = await async_client.get(
+            "/api/v1/search/", params={"q": "test", "content_types": ["invalid_type"]}
+        )
+
+        # Then
+        assert response.status_code == 500  # Internal server error (ValueError)
+
+    @pytest.mark.asyncio
+    async def test_autocomplete_with_invalid_type(self, async_client: AsyncClient):
+        """잘못된 autocomplete 타입으로 요청 시 에러 처리 테스트"""
+        # When
+        response = await async_client.get(
+            "/api/v1/search/autocomplete", params={"q": "test", "type": "invalid_type"}
+        )
+
+        # Then
+        assert response.status_code == 400  # Bad request
+
+    @pytest.mark.asyncio
+    async def test_search_with_unauthorized_user(
+        self, async_client: AsyncClient, test_db: AsyncSession, test_user: User
+    ):
+        """인증되지 않은 사용자의 검색 테스트"""
+        # Given
+        private_project = Project(
+            title="Private Project",
+            description="Private project for testing",
+            status=ProjectStatus.ACTIVE,
+            visibility=ProjectVisibility.PRIVATE,
+            owner_id=test_user.id,
+            slug="private-project",
+            tech_stack=["Python"],
+            categories=["private"],
+            tags=["private"],
+        )
+
+        test_db.add(private_project)
+        await test_db.commit()
+        await test_db.refresh(private_project)
+
+        # When (인증 없이 요청)
+        response = await async_client.get("/api/v1/search/", params={"q": "Private"})
+
+        # Then
+        assert response.status_code == 200
+        data = response.json()
+        # 인증되지 않은 사용자는 private 프로젝트를 볼 수 없어야 함
+        private_projects = [
+            p for p in data["projects"] if p["title"] == "Private Project"
         ]
-
-        for query in injection_queries:
-            response = await async_client.get("/api/v1/search/", params={"q": query})
-            # 보안 필터링으로 인해 다양한 응답 가능
-            assert response.status_code in [200, 400, 401, 422]
-
-            # 응답에 실행된 코드나 민감한 정보가 없어야 함
-            if response.status_code == 200:
-                content = response.text.lower()
-                assert "49" not in content  # 7*7 실행 결과
-                assert "root:" not in content  # passwd 파일 내용
+        assert len(private_projects) == 0

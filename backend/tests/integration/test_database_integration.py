@@ -22,6 +22,7 @@ class TestDatabaseIntegration:
         # 사용자 생성
         user = User(
             email="test@example.com",
+            username="testuser",
             name="Test User",
             github_username="testuser",
             role=UserRole.USER,
@@ -61,6 +62,7 @@ class TestDatabaseIntegration:
         # 사용자 생성
         user = User(
             email="test@example.com",
+            username="testuser",
             name="Test User",
             github_username="testuser",
         )
@@ -106,6 +108,7 @@ class TestDatabaseIntegration:
         # 사용자 생성
         user = User(
             email="test@example.com",
+            username="testuser",
             name="Test User",
             github_username="testuser",
         )
@@ -159,6 +162,7 @@ class TestDatabaseIntegration:
         # 사용자 생성
         user = User(
             email="test@example.com",
+            username="testuser",
             name="Test User",
             github_username="testuser",
         )
@@ -204,6 +208,7 @@ class TestDatabaseIntegration:
         # 사용자 생성
         user = User(
             email="test@example.com",
+            username="testuser",
             name="Test User",
             github_username="testuser",
         )
