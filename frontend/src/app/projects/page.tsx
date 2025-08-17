@@ -12,18 +12,16 @@ import {
   Plus, 
   Grid3X3, 
   List, 
-  Filter,
   MoreVertical,
   Star,
   Eye,
-  GitBranch,
   Calendar,
   ExternalLink
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { projectService } from '@/lib/api/services/projects';
-import { Project } from '@/types/api';
+import { Project, ProjectStatus, ProjectVisibility } from '@/types/api';
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -54,10 +52,10 @@ export default function ProjectsPage() {
       // 개발 환경에서만 상세 에러 정보 표시
       if (process.env.NODE_ENV === 'development') {
         console.error('에러 상세:', {
-          name: error?.name,
-          message: error?.message,
-          status: error?.status,
-          code: error?.code
+          name: error instanceof Error ? error.name : 'Unknown',
+          message: error instanceof Error ? error.message : String(error),
+          status: 'status' in (error as object) ? (error as { status: unknown }).status : undefined,
+          code: 'code' in (error as object) ? (error as { code: unknown }).code : undefined
         });
       }
       
@@ -75,21 +73,21 @@ export default function ProjectsPage() {
     return matchesSearch && matchesStatus;
   });
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: ProjectStatus) => {
     switch (status) {
-      case 'active': return 'bg-green-100 text-green-800';
-      case 'completed': return 'bg-blue-100 text-blue-800';
-      case 'archived': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-yellow-100 text-yellow-800';
+      case ProjectStatus.DRAFT: return 'bg-yellow-100 text-yellow-800';
+      case ProjectStatus.PUBLISHED: return 'bg-green-100 text-green-800';
+      case ProjectStatus.ARCHIVED: return 'bg-gray-100 text-gray-800';
+      default: return 'bg-blue-100 text-blue-800';
     }
   };
 
-  const getStatusLabel = (status: string) => {
+  const getStatusLabel = (status: ProjectStatus) => {
     switch (status) {
-      case 'active': return '진행중';
-      case 'completed': return '완료';
-      case 'archived': return '보관됨';
-      default: return '대기중';
+      case ProjectStatus.DRAFT: return '초안';
+      case ProjectStatus.PUBLISHED: return '발행됨';
+      case ProjectStatus.ARCHIVED: return '보관됨';
+      default: return '알 수 없음';
     }
   };
 
@@ -140,9 +138,9 @@ export default function ProjectsPage() {
                       onChange={(e) => setFilterStatus(e.target.value)}
                     >
                       <option value="all">모든 상태</option>
-                      <option value="active">진행중</option>
-                      <option value="completed">완료</option>
-                      <option value="archived">보관됨</option>
+                      <option value={ProjectStatus.DRAFT}>초안</option>
+                      <option value={ProjectStatus.PUBLISHED}>발행됨</option>
+                      <option value={ProjectStatus.ARCHIVED}>보관됨</option>
                     </select>
                     <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
                       <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -204,8 +202,8 @@ export default function ProjectsPage() {
                               <Badge className={getStatusColor(project.status)}>
                                 {getStatusLabel(project.status)}
                               </Badge>
-                              <Badge variant={project.visibility === 'public' ? 'outline' : 'secondary'}>
-                                {project.visibility === 'public' ? '공개' : '비공개'}
+                              <Badge variant={project.visibility === ProjectVisibility.PUBLIC ? 'outline' : 'secondary'}>
+                                {project.visibility === ProjectVisibility.PUBLIC ? '공개' : '비공개'}
                               </Badge>
                             </div>
                             <CardTitle className="text-lg">
@@ -261,7 +259,7 @@ export default function ProjectsPage() {
                                 편집
                               </Button>
                             </Link>
-                            {project.visibility === 'public' && (
+                            {project.visibility === ProjectVisibility.PUBLIC && (
                               <Button variant="outline" size="sm">
                                 <ExternalLink className="w-4 h-4" />
                               </Button>

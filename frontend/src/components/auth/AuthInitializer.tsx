@@ -17,7 +17,7 @@ export default function AuthInitializer() {
     } else {
       console.log('🔍 토큰 없음 - 인증되지 않은 상태');
     }
-  }, [validateToken]); // isAuthenticated 의존성 제거
+  }, [validateToken, isAuthenticated]); // isAuthenticated 의존성 추가
 
   return null; // 이 컴포넌트는 UI를 렌더링하지 않음
 }

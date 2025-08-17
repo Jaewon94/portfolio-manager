@@ -41,8 +41,8 @@ export function LoginForm() {
           setError('로그인에 실패했습니다. 이메일과 비밀번호를 확인해주세요.');
         }
       }
-    } catch (err: any) {
-      setError(err.message || (isRegisterMode ? '회원가입에 실패했습니다.' : '로그인에 실패했습니다.'));
+    } catch (err: unknown) {
+      setError((err as Error)?.message || (isRegisterMode ? '회원가입에 실패했습니다.' : '로그인에 실패했습니다.'));
     }
   };
 

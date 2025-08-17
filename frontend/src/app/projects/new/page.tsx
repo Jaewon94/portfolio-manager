@@ -11,7 +11,6 @@ import { Badge } from '@/components/ui/badge';
 import { 
   ArrowLeft,
   Save,
-  Plus,
   X,
   Globe,
   Lock,
@@ -21,6 +20,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { projectService } from '@/lib/api/services/projects';
+import { ProjectStatus, ProjectVisibility } from '@/types/api';
 
 export default function NewProjectPage() {
   const router = useRouter();
@@ -29,8 +29,8 @@ export default function NewProjectPage() {
     title: '',
     slug: '',
     description: '',
-    status: 'active',
-    visibility: 'public',
+    status: ProjectStatus.DRAFT,
+    visibility: ProjectVisibility.PUBLIC,
     featured: false,
     tech_stack: [] as string[],
     categories: [] as string[],
@@ -324,9 +324,9 @@ export default function NewProjectPage() {
                         <div className="flex gap-2 w-full sm:w-auto">
                           <Button
                             type="button"
-                            variant={formData.visibility === 'public' ? 'default' : 'outline'}
+                            variant={formData.visibility === ProjectVisibility.PUBLIC ? 'default' : 'outline'}
                             size="sm"
-                            onClick={() => setFormData({...formData, visibility: 'public'})}
+                            onClick={() => setFormData({...formData, visibility: ProjectVisibility.PUBLIC})}
                             className="flex-1 sm:flex-none"
                           >
                             <Globe className="w-4 h-4 mr-1" />
@@ -334,9 +334,9 @@ export default function NewProjectPage() {
                           </Button>
                           <Button
                             type="button"
-                            variant={formData.visibility === 'private' ? 'default' : 'outline'}
+                            variant={formData.visibility === ProjectVisibility.PRIVATE ? 'default' : 'outline'}
                             size="sm"
-                            onClick={() => setFormData({...formData, visibility: 'private'})}
+                            onClick={() => setFormData({...formData, visibility: ProjectVisibility.PRIVATE})}
                             className="flex-1 sm:flex-none"
                           >
                             <Lock className="w-4 h-4 mr-1" />
@@ -354,12 +354,11 @@ export default function NewProjectPage() {
                           <select
                             className="px-3 py-2 pr-8 border rounded-lg text-xs md:text-sm w-full appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                             value={formData.status}
-                            onChange={(e) => setFormData({...formData, status: e.target.value})}
+                            onChange={(e) => setFormData({...formData, status: e.target.value as ProjectStatus})}
                           >
-                            <option value="active">진행중</option>
-                            <option value="completed">완료</option>
-                            <option value="paused">일시중지</option>
-                            <option value="archived">보관됨</option>
+                            <option value={ProjectStatus.DRAFT}>초안</option>
+                            <option value={ProjectStatus.PUBLISHED}>발행됨</option>
+                            <option value={ProjectStatus.ARCHIVED}>보관됨</option>
                           </select>
                           <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
                             <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

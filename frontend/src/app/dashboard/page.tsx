@@ -6,7 +6,7 @@ import { Sidebar } from '@/components/layout/sidebar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useState, useEffect } from 'react';
-import { dashboardService, DashboardStats, RecentProject, RecentActivity } from '@/lib/api/services/dashboard';
+import { dashboardService, RecentProject, RecentActivity } from '@/lib/api/services/dashboard';
 import Link from 'next/link';
 
 // 통계 카드 데이터 타입
@@ -84,10 +84,10 @@ export default function DashboardPage() {
       // 개발 환경에서만 상세 에러 표시
       if (process.env.NODE_ENV === 'development') {
         console.error('에러 상세:', {
-          name: error?.name,
-          message: error?.message,
-          status: error?.status,
-          code: error?.code
+          name: (error as Error)?.name,
+          message: (error as Error)?.message,
+          status: (error as { status?: number })?.status,
+          code: (error as { code?: string })?.code
         });
       }
     } finally {
