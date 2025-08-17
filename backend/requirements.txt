@@ -10,12 +10,13 @@ psycopg2-binary==2.9.10  # 동기 PostgreSQL 드라이버 (Alembic 마이그레�
 greenlet==3.2.4  # SQLAlchemy 비동기 지원 라이브러리 (코루틴 관리)
 
 # Pydantic & 검증
-pydantic==2.10.4  # 데이터 검증 및 직렬화 (타입 안전성, JSON 스키마)
+pydantic[email]==2.10.4  # 데이터 검증 및 직렬화 (타입 안전성, JSON 스키마, 이메일 검증)
 pydantic-settings==2.7.0  # 환경변수 및 설정 관리 (.env 파일 자동 로드)
 
 # 인증 & 보안
 python-jose[cryptography]==3.3.0  # JWT 토큰 생성/검증 (JSON Web Token)
 passlib[bcrypt]==1.7.4  # 비밀번호 해싱 (bcrypt 암호화)
+bcrypt==4.3.0  # 비밀번호 해싱 라이브러리 (passlib 의존성)
 python-multipart==0.0.6  # 파일 업로드 지원 (multipart/form-data 파싱)
 
 # 기타 유틸리티
