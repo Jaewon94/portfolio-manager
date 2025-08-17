@@ -11,18 +11,23 @@
 
 당신의 프로젝트/경력/성과를 체계적으로 수집·정리·배포하는 포트폴리오 운영 도구입니다. README.md에 따르면 이는 다수의 포트폴리오 사이트를 중앙에서 통합 관리하고, SSO를 통해 모든 사이트의 로그인을 일원화하는 포트폴리오 매니저입니다.
 
-## 핵심 도메인 모델
+## 📊 핵심 도메인 모델 (3NF 준수 완료)
 
-README.md에 정의된 주요 엔티티:
-- **User**: 전역 사용자 (id, email, name, role)
-- **Project**: 포트폴리오 단위 (id, ownerId, slug, title, visibility, status)
-- **Site**: 배포 가능한 사이트 인스턴스 (id, projectId, subdomain, deployedAt)
-- **Note**: 좌측 탭 기반 노트 (id, projectId, type[learn|change|research], title, content, tags)
-- **Media**: 첨부 미디어 (id, targetType[note|project], targetId, url, type)
-- **AuthAccount**: 소셜/외부 계정 연동 (id, userId, provider)
-- **Session**: 세션/토큰 관리 (id, userId, createdAt, expiresAt)
-- **Deployment**: 배포 이력 (id, projectId, env[local|prod], status, url)
-- **SearchIndex**: 검색 인덱스 (id, targetType, targetId, content)
+**설계 문서**: `docs/02.데이터베이스_ERD.md` (S-Class 평가 완료)
+
+### MVP Phase 1 핵심 엔티티 (7개)
+- **User**: 전역 사용자 (id, email, name, bio, github_username, role, is_verified)
+- **AuthAccount**: 소셜 로그인 연동 (id, userId, provider, provider_account_id, tokens)
+- **Session**: 세션/토큰 관리 (id, userId, session_token, expires, ip_address, user_agent)
+- **Project**: 포트폴리오 단위 (id, owner_id, slug, title, description, content[JSONB], tech_stack[], categories[], tags[], status, visibility, featured, view_count, like_count)
+- **GithubRepository**: GitHub 저장소 정보 (id, project_id, github_url, repository_name, stars, forks, language, license, last_commit_date, sync_enabled) - **3NF 준수를 위해 Project에서 분리**
+- **Note**: 좌측 탭 기반 노트 (id, project_id, type[learn|change|research], title, content[JSONB], tags[], is_pinned, is_archived)
+- **Media**: 첨부 미디어 (id, target_type[project|note], target_id, original_name, file_path, file_size, mime_type, type[image|video|document], width, height, is_public, alt_text)
+
+### Phase 2+ 확장 엔티티
+- **Site**: 배포된 사이트 (id, project_id, subdomain, custom_domain, deployed_at, status)
+- **Deployment**: 배포 이력 (id, project_id, env[local|staging|production], status, url, build_time, error_message)
+- **SearchIndex**: 전문 검색 인덱스 (PostgreSQL tsvector 기반)
 
 ## 주요 기능 구현 시 고려사항
 
@@ -196,6 +201,52 @@ Service_Mesh: "Istio 등은 선택적, 복잡도 고려"
   - 의존성이 20개 초과  
   - 서비스가 5개 초과
   - 빌드 시간이 5분 초과
+```
+
+## 📋 API 설계 요약 (개발 참조용)
+
+**설계 문서**: `docs/03.API_엔드포인트_설계.md` (S-Class 평가 완료)
+
+### 핵심 API 엔드포인트
+
+#### 인증 API (v1)
+- `POST /api/auth/login/{provider}` - 소셜 로그인 (GitHub/Google)
+- `POST /api/auth/logout` - 로그아웃
+- `GET /api/auth/me` - 현재 사용자 정보
+- `POST /api/auth/refresh` - 토큰 갱신
+
+#### 프로젝트 API (v1)
+- `GET /api/projects` - 프로젝트 목록 (페이지네이션, 필터링)
+- `POST /api/projects` - 프로젝트 생성
+- `GET /api/projects/{id}` - 프로젝트 상세
+- `PATCH /api/projects/{id}` - 프로젝트 수정
+- `DELETE /api/projects/{id}` - 프로젝트 삭제
+
+#### 노트 API (v1)
+- `GET /api/projects/{projectId}/notes` - 노트 목록 (타입별)
+- `POST /api/projects/{projectId}/notes` - 노트 생성
+- `GET /api/notes/{id}` - 노트 상세
+- `PATCH /api/notes/{id}` - 노트 수정
+- `DELETE /api/notes/{id}` - 노트 삭제
+
+#### 검색 API (v1)
+- `GET /api/search` - 전역 검색 (프로젝트/노트/사용자)
+- `GET /api/search/autocomplete` - 자동완성
+
+### 표준 응답 형식
+```typescript
+interface SuccessResponse<T> {
+  success: true;
+  data: T;
+  meta?: { total?: number; page?: number; pageSize?: number };
+}
+
+interface ErrorResponse {
+  success: false;
+  error: { code: string; message: string; details?: any };
+  timestamp: string;
+  path: string;
+}
 ```
 
 ## 🎯 현실적 4단계 구현 로드맵

@@ -1,0 +1,89 @@
+import os
+from typing import List
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    """
+    애플리케이션 설정
+
+    Pydantic Settings는 자동으로 환경변수와 .env 파일에서 값을 읽어옵니다.
+    우선순위: 환경변수 > .env 파일 > 아래 기본값
+
+    예시: PROJECT_NAME 필드는 환경변수 PROJECT_NAME 또는 .env의 PROJECT_NAME= 값을 자동 매핑
+    """
+
+    # API 설정 (.env 파일에서 자동 로드)
+    PROJECT_NAME: str = "Portfolio Manager API"  # 폴백 기본값
+    VERSION: str = "0.1.0"
+    API_V1_STR: str = "/api/v1"
+
+    # CORS 설정 (.env의 ALLOWED_HOSTS 값으로 자동 치환)
+    ALLOWED_HOSTS: str = "http://localhost:3000,http://localhost:8000"
+
+    # 데이터베이스 설정 (.env의 DATABASE_URL 값으로 자동 치환)
+    DATABASE_URL: str = (
+        "postgresql+asyncpg://postgres:postgres@localhost:5432/portfolio_manager"
+    )
+    TEST_DATABASE_URL: str = (
+        "postgresql+asyncpg://postgres:postgres@localhost:5433/portfolio_manager_test"
+    )
+
+    @property
+    def SYNC_DATABASE_URL(self) -> str:
+        """Alembic용 동기 데이터베이스 URL"""
+        return self.DATABASE_URL.replace(
+            "postgresql+asyncpg://", "postgresql+psycopg2://"
+        )
+
+    @property
+    def is_production(self) -> bool:
+        """프로덕션 환경 여부"""
+        return self.ENVIRONMENT.lower() == "production"
+
+    # JWT 설정 (.env의 SECRET_KEY 등으로 자동 치환)
+    SECRET_KEY: str = "your-secret-key-change-in-production"
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+
+    # OAuth 설정 (.env의 OAuth 값들로 자동 치환)
+    GITHUB_CLIENT_ID: str = "your-github-client-id"
+    GITHUB_CLIENT_SECRET: str = "your-github-client-secret"
+    GOOGLE_CLIENT_ID: str = "your-google-client-id"
+    GOOGLE_CLIENT_SECRET: str = "your-google-client-secret"
+    GOOGLE_REDIRECT_URI: str = "http://localhost:3000/auth/callback/google"
+    KAKAO_CLIENT_ID: str = "your-kakao-client-id"
+    KAKAO_CLIENT_SECRET: str = "your-kakao-client-secret"
+    KAKAO_REDIRECT_URI: str = "http://localhost:3000/auth/callback/kakao"
+
+    # Redis 설정 (.env의 REDIS_URL 값으로 자동 치환)
+    REDIS_URL: str = "redis://localhost:6379"
+
+    # 환경 설정 (.env의 ENVIRONMENT, LOG_LEVEL 값으로 자동 치환)
+    ENVIRONMENT: str = "development"
+    LOG_LEVEL: str = "INFO"
+
+    # 미디어 설정 (.env의 MEDIA_ROOT 값으로 자동 치환)
+    MEDIA_ROOT: str = "./media"
+    MEDIA_URL: str = "/media"
+    MAX_UPLOAD_SIZE: int = 50 * 1024 * 1024  # 50MB
+
+    @property
+    def allowed_hosts_list(self) -> List[str]:
+        """CORS용 호스트 리스트 반환"""
+        return [host.strip() for host in self.ALLOWED_HOSTS.split(",")]
+
+    model_config = SettingsConfigDict(
+        # 환경에 따른 .env 파일 선택
+        env_file=(
+            ".env.dev"
+            if os.getenv("ENVIRONMENT", "development") == "development"
+            else ".env.test" if os.getenv("ENVIRONMENT") == "test" else ".env.prod"
+        ),
+        env_file_encoding="utf-8",
+    )
+
+
+settings = Settings()
