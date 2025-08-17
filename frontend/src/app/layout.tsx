@@ -1,5 +1,4 @@
-import { Header } from '@/components/layout/header';
-import { Sidebar } from '@/components/layout/sidebar';
+import AuthInitializer from '@/components/auth/AuthInitializer';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
@@ -19,19 +18,8 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body className={inter.className}>
-        <div className="flex h-screen bg-background">
-          {/* 사이드바 */}
-          <Sidebar />
-
-          {/* 메인 콘텐츠 영역 */}
-          <div className="flex-1 flex flex-col">
-            {/* 헤더 */}
-            <Header />
-
-            {/* 메인 콘텐츠 */}
-            <main className="flex-1 overflow-auto">{children}</main>
-          </div>
-        </div>
+        <AuthInitializer />
+        {children}
       </body>
     </html>
   );

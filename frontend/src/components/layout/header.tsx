@@ -1,9 +1,7 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,16 +9,27 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Search, Bell, User, LogOut, Settings } from "lucide-react";
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { useAuthStore } from '@/stores/authStore';
+import { Bell, LogOut, Search, Settings, User } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 export function Header() {
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
+  const router = useRouter();
+  const { user, logout } = useAuthStore();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     // 검색 로직 구현
-    console.log("Search:", searchQuery);
+    console.log('Search:', searchQuery);
+  };
+
+  const handleLogout = () => {
+    logout();
+    router.push('/auth/login');
   };
 
   return (
@@ -51,17 +60,22 @@ export function Header() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-8 w-8 rounded-full">
               <Avatar className="h-8 w-8">
-                <AvatarImage src="/avatars/01.png" alt="User" />
-                <AvatarFallback>U</AvatarFallback>
+                <AvatarImage
+                  src={user?.avatar_url || '/avatars/default.png'}
+                  alt="User"
+                />
+                <AvatarFallback>{user?.name?.charAt(0) || 'U'}</AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-56" align="end" forceMount>
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">사용자</p>
+                <p className="text-sm font-medium leading-none">
+                  {user?.name || '사용자'}
+                </p>
                 <p className="text-xs leading-none text-muted-foreground">
-                  user@example.com
+                  {user?.email || 'user@example.com'}
                 </p>
               </div>
             </DropdownMenuLabel>
@@ -75,7 +89,7 @@ export function Header() {
               <span>설정</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={handleLogout}>
               <LogOut className="mr-2 h-4 w-4" />
               <span>로그아웃</span>
             </DropdownMenuItem>
